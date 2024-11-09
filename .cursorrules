@@ -35,5 +35,13 @@
   - Use 'nuqs' for URL search parameter state management.
   - Optimize Web Vitals (LCP, CLS, FID).
   
-  Follow Tanstack Router docs for Data Fetching, Rendering, and Routing.
-  
+  Follow latest Tanstack Router docs for Data Fetching, Rendering, and Routing.
+
+  Follow latest Tanstack Query docs for Data Fetching and State Management.
+
+  Follow latest Shadcn UI docs for Components and Styling.
+
+  am using Bun as my package manager
+
+  Commands
+  - use bunx --bun shadcn@latestt to generate components

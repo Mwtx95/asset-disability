@@ -11,9 +11,51 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as UsersImport } from './routes/users'
+import { Route as SettingsImport } from './routes/settings'
+import { Route as ReportsImport } from './routes/reports'
+import { Route as RegistrationImport } from './routes/registration'
+import { Route as NotificationsImport } from './routes/notifications'
+import { Route as AssetsImport } from './routes/assets'
 import { Route as IndexImport } from './routes/index'
 
 // Create/Update Routes
+
+const UsersRoute = UsersImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SettingsRoute = SettingsImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ReportsRoute = ReportsImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const RegistrationRoute = RegistrationImport.update({
+  id: '/registration',
+  path: '/registration',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const NotificationsRoute = NotificationsImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AssetsRoute = AssetsImport.update({
+  id: '/assets',
+  path: '/assets',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
@@ -32,6 +74,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/assets': {
+      id: '/assets'
+      path: '/assets'
+      fullPath: '/assets'
+      preLoaderRoute: typeof AssetsImport
+      parentRoute: typeof rootRoute
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsImport
+      parentRoute: typeof rootRoute
+    }
+    '/registration': {
+      id: '/registration'
+      path: '/registration'
+      fullPath: '/registration'
+      preLoaderRoute: typeof RegistrationImport
+      parentRoute: typeof rootRoute
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsImport
+      parentRoute: typeof rootRoute
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsImport
+      parentRoute: typeof rootRoute
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -39,32 +123,84 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assets': typeof AssetsRoute
+  '/notifications': typeof NotificationsRoute
+  '/registration': typeof RegistrationRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assets': typeof AssetsRoute
+  '/notifications': typeof NotificationsRoute
+  '/registration': typeof RegistrationRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/assets': typeof AssetsRoute
+  '/notifications': typeof NotificationsRoute
+  '/registration': typeof RegistrationRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/assets'
+    | '/notifications'
+    | '/registration'
+    | '/reports'
+    | '/settings'
+    | '/users'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/assets'
+    | '/notifications'
+    | '/registration'
+    | '/reports'
+    | '/settings'
+    | '/users'
+  id:
+    | '__root__'
+    | '/'
+    | '/assets'
+    | '/notifications'
+    | '/registration'
+    | '/reports'
+    | '/settings'
+    | '/users'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AssetsRoute: typeof AssetsRoute
+  NotificationsRoute: typeof NotificationsRoute
+  RegistrationRoute: typeof RegistrationRoute
+  ReportsRoute: typeof ReportsRoute
+  SettingsRoute: typeof SettingsRoute
+  UsersRoute: typeof UsersRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AssetsRoute: AssetsRoute,
+  NotificationsRoute: NotificationsRoute,
+  RegistrationRoute: RegistrationRoute,
+  ReportsRoute: ReportsRoute,
+  SettingsRoute: SettingsRoute,
+  UsersRoute: UsersRoute,
 }
 
 export const routeTree = rootRoute
@@ -77,11 +213,35 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/"
+        "/",
+        "/assets",
+        "/notifications",
+        "/registration",
+        "/reports",
+        "/settings",
+        "/users"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/assets": {
+      "filePath": "assets.tsx"
+    },
+    "/notifications": {
+      "filePath": "notifications.tsx"
+    },
+    "/registration": {
+      "filePath": "registration.tsx"
+    },
+    "/reports": {
+      "filePath": "reports.tsx"
+    },
+    "/settings": {
+      "filePath": "settings.tsx"
+    },
+    "/users": {
+      "filePath": "users.tsx"
     }
   }
 }
