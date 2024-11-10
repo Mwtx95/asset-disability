@@ -45,3 +45,5 @@
 
   Commands
   - use bunx --bun shadcn@latestt to generate components
+
+  - whenever you use shadcn components check if the component is already exit if not give me the command to generate it.
