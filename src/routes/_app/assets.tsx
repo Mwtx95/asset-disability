@@ -95,6 +95,7 @@ function AssetsRoute() {
                   <SelectValue placeholder='Category' />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value='All Categories'>All Categories</SelectItem>
                   {categories?.map(category => (
                     <SelectItem key={category.id} value={category.name}>
                       {category.name}

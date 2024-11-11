@@ -8,34 +8,28 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  PencilIcon,
-  PlusIcon,
-  TrashIcon,
-  LockIcon,
-  UnlockIcon,
-} from 'lucide-react';
+import { LockIcon, PencilIcon, PlusIcon, UnlockIcon } from 'lucide-react';
 
-import { useState, useEffect } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { useQuery } from '@tanstack/react-query';
-import {
-  categoriesQueryOptions,
-  useCreateCategory,
-  useUpdateCategory,
-  useBlockCategory,
-  Category,
-} from '@/queries/categories';
-import { cn } from '@/lib/utils';
-import { Badge } from '../ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+import {
+  categoriesQueryOptions,
+  Category,
+  useBlockCategory,
+  useCreateCategory,
+  useUpdateCategory,
+} from '@/queries/categories';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Badge } from '../ui/badge';
 
 // Define the schema for form validation
 const categoryFormSchema = z.object({
