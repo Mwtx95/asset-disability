@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { assetsQueryOptions } from "@/queries/assets";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { AddAssetForm } from "@/components/assets/add-asset-form"
 
 const ASSET_CATEGORIES = [
   "All Categories",
@@ -36,6 +43,7 @@ function AssetsRoute() {
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedStatus, setSelectedStatus] = useState("All Statuses");
   const { data: assets, isLoading } = useSuspenseQuery(assetsQueryOptions);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   const filteredAssets = assets?.filter((asset) => {
     const matchesSearch = asset.name
@@ -58,11 +66,20 @@ function AssetsRoute() {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Assets</h1>
-        <Button>
+        <Button onClick={() => setIsAddModalOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add Asset
         </Button>
       </div>
+
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Asset</DialogTitle>
+          </DialogHeader>
+          <AddAssetForm onSuccess={() => setIsAddModalOpen(false)} />
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>

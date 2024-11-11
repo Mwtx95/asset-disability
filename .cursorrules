@@ -41,9 +41,9 @@
 
   Follow latest Shadcn UI docs for Components and Styling.
 
-  am using Bun as my package manager
+  prefer using Bun as my package manager
+  prefer using axios for api calls
 
   Commands
-  - use bunx --bun shadcn@latestt to generate components
-
+  - use bunx --bun shadcn@latest to generate components
   - whenever you use shadcn components check if the component is already exit if not give me the command to generate it.
