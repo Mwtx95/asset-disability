@@ -4,7 +4,7 @@ import { PlusCircle, Search } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -14,17 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
-
-interface Asset {
-  id: string;
-  name: string;
-  type: string;
-  location: string;
-  status: "ACTIVE" | "INACTIVE" | "MAINTENANCE";
-  lastUpdated: string;
-  assignedTo: string;
-  category: string;
-}
+import { assetsQueryOptions } from "@/queries/assets";
 
 const ASSET_CATEGORIES = [
   "All Categories",
@@ -37,6 +27,7 @@ const ASSET_CATEGORIES = [
 const ASSET_STATUSES = ["All Statuses", "ACTIVE", "INACTIVE", "MAINTENANCE"];
 
 export const Route = createFileRoute("/assets")({
+  loader: () => {},
   component: AssetsRoute,
 });
 
@@ -44,33 +35,15 @@ function AssetsRoute() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedStatus, setSelectedStatus] = useState("All Statuses");
-
-  const { data: assets, isLoading } = useQuery<Asset[]>({
-    queryKey: ["assets"],
-    queryFn: async () => {
-      // Replace with your actual API call
-      return [
-        {
-          id: "1",
-          name: "Wheelchair Type A",
-          type: "Equipment",
-          category: "Equipment",
-          location: "Main Office - Floor 1",
-          status: "ACTIVE",
-          lastUpdated: "11/10/2024",
-          assignedTo: "Jane Smith",
-        },
-        // Add more mock data as needed
-      ];
-    },
-  });
+  const { data: assets, isLoading } = useSuspenseQuery(assetsQueryOptions);
 
   const filteredAssets = assets?.filter((asset) => {
     const matchesSearch = asset.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesCategory =
-      selectedCategory === "All Categories" || asset.category === selectedCategory;
+      selectedCategory === "All Categories" ||
+      asset.categoryName === selectedCategory;
     const matchesStatus =
       selectedStatus === "All Statuses" || asset.status === selectedStatus;
 
@@ -139,16 +112,19 @@ function AssetsRoute() {
           <ScrollArea className="h-[calc(100vh-20rem)]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredAssets?.map((asset) => (
-                <Card key={asset.id} className="hover:bg-accent/50 cursor-pointer">
+                <Card
+                  key={asset.id}
+                  className="hover:bg-accent/50 cursor-pointer"
+                >
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <div className="font-semibold">{asset.name}</div>
                     <Badge
                       variant={
-                        asset.status === "ACTIVE"
+                        asset.status === "Available"
                           ? "success"
                           : asset.status === "MAINTENANCE"
-                          ? "warning"
-                          : "destructive"
+                            ? "warning"
+                            : "destructive"
                       }
                     >
                       {asset.status}
@@ -157,24 +133,24 @@ function AssetsRoute() {
                   <CardContent>
                     <div className="text-sm space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Type</span>
-                        <span>{asset.type}</span>
-                      </div>
-                      <div className="flex justify-between">
                         <span className="text-muted-foreground">Category</span>
-                        <span>{asset.category}</span>
+                        <span>{asset.categoryName}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Location</span>
-                        <span>{asset.location}</span>
+                        <span>{asset.officeName}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Last Updated</span>
-                        <span>{asset.lastUpdated}</span>
+                        <span className="text-muted-foreground">
+                          Last Updated
+                        </span>
+                        <span>{asset.updatedAt ?? "N/A"}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Assigned To</span>
-                        <span>{asset.assignedTo}</span>
+                        <span className="text-muted-foreground">
+                          Assigned To
+                        </span>
+                        {/* <span>{asset.assignedTo}</span> */}
                       </div>
                     </div>
                   </CardContent>
