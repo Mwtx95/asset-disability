@@ -25,6 +25,7 @@
   
   UI and Styling
   - Use Shadcn UI, Radix, and Tailwind for components and styling.
+  - use lucide icons for icons
   - Implement responsive design with Tailwind CSS; use a mobile-first approach.
   
   Performance Optimization
@@ -44,6 +45,7 @@
   prefer using Bun as my package manager
   prefer using axios for api calls
 
-  Commands
-  - use bunx --bun shadcn@latest to generate components
-  - whenever you use shadcn components check if the component is already exit if not give me the command to generate it.
+  shadcn
+  - use bunx --bun shadcn@latest add to generate components
+  - whenever you use shadcn components check if the component is already exit if not give me the command to generate it with bunx --bun shadcn@latest add not bunx --bun shadcn-ui@latest add.
+
