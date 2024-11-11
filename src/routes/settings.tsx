@@ -1,33 +1,41 @@
-import * as React from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CategoriesSettings } from '@/components/settings/categories-settings'
-import { VendorsSettings } from '@/components/settings/vendors-settings'
-import { NotificationSettings } from '@/components/settings/notification-settings'
-import { EmailSettings } from '@/components/settings/email-settings'
+import * as React from 'react';
+import { createFileRoute } from '@tanstack/react-router';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { CategoriesSettings } from '@/components/settings/categories-settings';
+import { VendorsSettings } from '@/components/settings/vendors-settings';
+import { NotificationSettings } from '@/components/settings/notification-settings';
+import { EmailSettings } from '@/components/settings/email-settings';
 
 export const Route = createFileRoute('/settings')({
   component: SettingsPage,
-})
+});
 
 function SettingsPage() {
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className='container mx-auto py-6 space-y-6'>
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your application preferences and configurations.</p>
+        <h1 className='text-3xl font-bold tracking-tight'>Settings</h1>
+        <p className='text-muted-foreground'>
+          Manage your application preferences and configurations.
+        </p>
       </div>
 
-      <Tabs defaultValue="categories" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="vendors">Vendors</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="email">Email</TabsTrigger>
+      <Tabs defaultValue='categories' className='space-y-4'>
+        <TabsList className='grid w-full grid-cols-4'>
+          <TabsTrigger value='categories'>Categories</TabsTrigger>
+          <TabsTrigger value='vendors'>Vendors</TabsTrigger>
+          <TabsTrigger value='email'>Email</TabsTrigger>
+          <TabsTrigger value='notifications'>Notifications</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="categories">
+
+        <TabsContent value='categories'>
           <Card>
             <CardHeader>
               <CardTitle>Categories</CardTitle>
@@ -41,7 +49,7 @@ function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="vendors">
+        <TabsContent value='vendors'>
           <Card>
             <CardHeader>
               <CardTitle>Service Providers & Vendors</CardTitle>
@@ -55,7 +63,7 @@ function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="notifications">
+        <TabsContent value='notifications'>
           <Card>
             <CardHeader>
               <CardTitle>Notification Preferences</CardTitle>
@@ -69,7 +77,7 @@ function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="email">
+        <TabsContent value='email'>
           <Card>
             <CardHeader>
               <CardTitle>Email Configuration</CardTitle>
@@ -84,5 +92,5 @@ function SettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
