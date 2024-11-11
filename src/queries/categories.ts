@@ -9,17 +9,13 @@ export interface Category {
   id: number;
   name: string;
   description: string;
+  isBlocked: boolean;
 }
 
 export interface CreateCategoryDTO {
   name: string;
   description: string;
 }
-
-export const categoryQueryOptions = queryOptions({
-  queryKey: ['categories'],
-  queryFn: fetchCategories,
-});
 
 async function fetchCategories() {
   const { data } = await axios.get<Category[]>('/categories');
@@ -31,11 +27,51 @@ async function createCategory(category: CreateCategoryDTO) {
   return data;
 }
 
+async function updateCategory(category: Category) {
+  const { data } = await axios.patch<Category>(
+    `/categories/${category.id}`,
+    category
+  );
+  return data;
+}
+
+async function blockCategory(id: number) {
+  const { data } = await axios.patch<Category>(`/categories/${id}/block`);
+  return data;
+}
+
+export const categoryQueryOptions = queryOptions({
+  queryKey: ['categories'],
+  queryFn: fetchCategories,
+});
+
 export function useCreateCategory() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: createCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    },
+  });
+}
+
+export function useUpdateCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    },
+  });
+}
+
+export function useBlockCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: blockCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
     },

@@ -1,6 +1,10 @@
-import * as React from 'react';
-import { createFileRoute } from '@tanstack/react-router';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CategoriesSettings } from '@/components/settings/categories-settings';
+import { EmailSettings } from '@/components/settings/email-settings';
+import { LocationSettings } from '@/components/settings/location-settings';
+import { LocationSettingsForm } from '@/components/settings/location-settings-form';
+import { NotificationSettings } from '@/components/settings/notification-settings';
+import { VendorsSettings } from '@/components/settings/vendors-settings';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -8,16 +12,26 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { CategoriesSettings } from '@/components/settings/categories-settings';
-import { VendorsSettings } from '@/components/settings/vendors-settings';
-import { NotificationSettings } from '@/components/settings/notification-settings';
-import { EmailSettings } from '@/components/settings/email-settings';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { createFileRoute } from '@tanstack/react-router';
+import { PlusIcon } from 'lucide-react';
+import * as React from 'react';
 
 export const Route = createFileRoute('/settings')({
   component: SettingsPage,
 });
 
 function SettingsPage() {
+  const [isOpen, setIsOpen] = React.useState<boolean>(false);
+  const [selectedTab, setSelectedTab] = React.useState<string>('locations');
+
   return (
     <div className='container mx-auto py-6 space-y-6'>
       <div>
@@ -27,10 +41,15 @@ function SettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue='categories' className='space-y-4'>
-        <TabsList className='grid w-full grid-cols-4'>
-          <TabsTrigger value='categories'>Categories</TabsTrigger>
+      <Tabs
+        value={selectedTab}
+        onValueChange={setSelectedTab}
+        className='space-y-4'
+      >
+        <TabsList className='grid w-full grid-cols-5'>
+          <TabsTrigger value='locations'>Locations</TabsTrigger>
           <TabsTrigger value='vendors'>Vendors</TabsTrigger>
+          <TabsTrigger value='categories'>Categories</TabsTrigger>
           <TabsTrigger value='email'>Email</TabsTrigger>
           <TabsTrigger value='notifications'>Notifications</TabsTrigger>
         </TabsList>
@@ -45,6 +64,39 @@ function SettingsPage() {
             </CardHeader>
             <CardContent>
               <CategoriesSettings />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value='locations'>
+          <Card>
+            <CardHeader>
+              <div className='flex justify-between'>
+                <div>
+                  <CardTitle>Locations</CardTitle>
+                  <CardDescription>
+                    Manage asset locations within your facilities.
+                  </CardDescription>
+                </div>
+                <div className=''>
+                  <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <PlusIcon className='mr-2 h-4 w-4' /> Add Location
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add New Location</DialogTitle>
+                      </DialogHeader>
+                      <LocationSettingsForm setIsOpen={setIsOpen} />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <LocationSettings />
             </CardContent>
           </Card>
         </TabsContent>
