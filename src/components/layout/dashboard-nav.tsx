@@ -37,11 +37,6 @@ const navItems: NavItem[] = [
     icon: Bell,
   },
   {
-    title: 'Users',
-    href: '/users',
-    icon: Users,
-  },
-  {
     title: 'Settings',
     href: '/settings',
     icon: Settings,

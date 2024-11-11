@@ -14,7 +14,7 @@ export interface Category {
 
 export interface CreateCategoryDTO {
   name: string;
-  description: string;
+  description?: string;
 }
 
 async function fetchCategories() {
@@ -28,7 +28,7 @@ async function createCategory(category: CreateCategoryDTO) {
 }
 
 async function updateCategory(category: Category) {
-  const { data } = await axios.patch<Category>(
+  const { data } = await axios.put<Category>(
     `/categories/${category.id}`,
     category
   );
@@ -40,7 +40,7 @@ async function blockCategory(id: number) {
   return data;
 }
 
-export const categoryQueryOptions = queryOptions({
+export const categoriesQueryOptions = queryOptions({
   queryKey: ['categories'],
   queryFn: fetchCategories,
 });

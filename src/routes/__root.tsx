@@ -12,10 +12,11 @@ type RouteContext = {
 
 export const Route = createRootRouteWithContext<RouteContext>()({
   beforeLoad: ({ context: { isAuthenticated }, location }) => {
+    const rootPage = location.pathname === '/';
     const isLoginPage = location.pathname === '/login';
 
     if (isLoginPage && !isAuthenticated) return;
-    if (isLoginPage) throw redirect({ to: '/dashboard' });
+    if (isLoginPage || rootPage) throw redirect({ to: '/dashboard' });
     if (!isAuthenticated) throw redirect({ to: '/login' });
   },
   component: Outlet,

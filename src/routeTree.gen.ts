@@ -13,7 +13,6 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as AppImport } from './routes/_app'
 import { Route as AuthLoginImport } from './routes/_auth/login'
-import { Route as AppUsersImport } from './routes/_app/users'
 import { Route as AppSettingsImport } from './routes/_app/settings'
 import { Route as AppReportsImport } from './routes/_app/reports'
 import { Route as AppRegistrationImport } from './routes/_app/registration'
@@ -32,12 +31,6 @@ const AuthLoginRoute = AuthLoginImport.update({
   id: '/_auth/login',
   path: '/login',
   getParentRoute: () => rootRoute,
-} as any)
-
-const AppUsersRoute = AppUsersImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AppRoute,
 } as any)
 
 const AppSettingsRoute = AppSettingsImport.update({
@@ -129,13 +122,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsImport
       parentRoute: typeof AppImport
     }
-    '/_app/users': {
-      id: '/_app/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof AppUsersImport
-      parentRoute: typeof AppImport
-    }
     '/_auth/login': {
       id: '/_auth/login'
       path: '/login'
@@ -155,7 +141,6 @@ interface AppRouteChildren {
   AppRegistrationRoute: typeof AppRegistrationRoute
   AppReportsRoute: typeof AppReportsRoute
   AppSettingsRoute: typeof AppSettingsRoute
-  AppUsersRoute: typeof AppUsersRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -165,7 +150,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppRegistrationRoute: AppRegistrationRoute,
   AppReportsRoute: AppReportsRoute,
   AppSettingsRoute: AppSettingsRoute,
-  AppUsersRoute: AppUsersRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -178,7 +162,6 @@ export interface FileRoutesByFullPath {
   '/registration': typeof AppRegistrationRoute
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
-  '/users': typeof AppUsersRoute
   '/login': typeof AuthLoginRoute
 }
 
@@ -190,7 +173,6 @@ export interface FileRoutesByTo {
   '/registration': typeof AppRegistrationRoute
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
-  '/users': typeof AppUsersRoute
   '/login': typeof AuthLoginRoute
 }
 
@@ -203,7 +185,6 @@ export interface FileRoutesById {
   '/_app/registration': typeof AppRegistrationRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/settings': typeof AppSettingsRoute
-  '/_app/users': typeof AppUsersRoute
   '/_auth/login': typeof AuthLoginRoute
 }
 
@@ -217,7 +198,6 @@ export interface FileRouteTypes {
     | '/registration'
     | '/reports'
     | '/settings'
-    | '/users'
     | '/login'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -228,7 +208,6 @@ export interface FileRouteTypes {
     | '/registration'
     | '/reports'
     | '/settings'
-    | '/users'
     | '/login'
   id:
     | '__root__'
@@ -239,7 +218,6 @@ export interface FileRouteTypes {
     | '/_app/registration'
     | '/_app/reports'
     | '/_app/settings'
-    | '/_app/users'
     | '/_auth/login'
   fileRoutesById: FileRoutesById
 }
@@ -276,8 +254,7 @@ export const routeTree = rootRoute
         "/_app/notifications",
         "/_app/registration",
         "/_app/reports",
-        "/_app/settings",
-        "/_app/users"
+        "/_app/settings"
       ]
     },
     "/_app/assets": {
@@ -302,10 +279,6 @@ export const routeTree = rootRoute
     },
     "/_app/settings": {
       "filePath": "_app/settings.tsx",
-      "parent": "/_app"
-    },
-    "/_app/users": {
-      "filePath": "_app/users.tsx",
       "parent": "/_app"
     },
     "/_auth/login": {

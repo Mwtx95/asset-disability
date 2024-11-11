@@ -7,7 +7,6 @@ import { routeTree } from './routeTree.gen';
 
 const queryClient = new QueryClient();
 
-// Set up a Router instance
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
@@ -16,9 +15,8 @@ const router = createRouter({
   defaultPreloadStaleTime: 0,
 });
 
-axios.defaults.baseURL = 'http://127.0.0.1:8081';
+axios.defaults.baseURL = 'http://127.0.0.1:8080';
 
-// Register things for typesafety
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;

@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ASSET_STATUSES } from '@/lib/constants';
-import { categoryQueryOptions } from '@/queries/categories';
+import { categoriesQueryOptions } from '@/queries/categories';
 import { locationQueryOptions } from '@/queries/locations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -44,7 +44,7 @@ interface AddAssetFormProps {
 
 export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
   const queryClient = useQueryClient();
-  const { data: categories } = useSuspenseQuery(categoryQueryOptions);
+  const { data: categories } = useSuspenseQuery(categoriesQueryOptions);
   const { data: locations } = useSuspenseQuery(locationQueryOptions);
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),

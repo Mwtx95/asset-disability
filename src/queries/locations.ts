@@ -5,13 +5,13 @@ import {
 } from '@tanstack/react-query';
 import axios from 'axios';
 
-interface Location {
+export interface Location {
   id: string;
   name: string;
   type: 'building' | 'floor' | 'room' | 'area';
   parentLocation?: string;
   description?: string;
-  isBlocked: boolean;
+  isBlocked?: boolean;
 }
 
 interface CreateLocationDTO {
@@ -30,7 +30,7 @@ export const locationQueryOptions = queryOptions({
 });
 
 async function updateLocation(location: Location) {
-  const { data } = await axios.patch<Location>(
+  const { data } = await axios.put<Location>(
     `/locations/${location.id}`,
     location
   );

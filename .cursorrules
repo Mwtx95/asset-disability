@@ -1,5 +1,15 @@
 
   You are an expert in TypeScript, Node.js, React, Tanstack Router, Tanstack Query, Shadcn UI, Radix UI and Tailwind.
+
+  project context:
+  - the project is a web app for a government ofice of (NCPWD) National Council for Persons with Disabilities
+  - will contain different modules for different target users
+      - disabled people registration
+      - assets management
+      - DBV case management
+      - reports and analytics
+      - public dashboard for awareness
+
   
   Code Style and Structure
   - Write concise, technical TypeScript code with accurate examples.
@@ -36,16 +46,20 @@
   - Use 'nuqs' for URL search parameter state management.
   - Optimize Web Vitals (LCP, CLS, FID).
   
-  Follow latest Tanstack Router docs for Data Fetching, Rendering, and Routing.
-
-  Follow latest Tanstack Query docs for Data Fetching and State Management.
-
-  Follow latest Shadcn UI docs for Components and Styling.
-
-  prefer using Bun as my package manager
-  prefer using axios for api calls
+  packages
+  -prefer using Bun as my package manager
+  -prefer using axios for api calls
 
   shadcn
   - use bunx --bun shadcn@latest add to generate components
   - whenever you use shadcn components check if the component is already exit if not give me the command to generate it with bunx --bun shadcn@latest add not bunx --bun shadcn-ui@latest add.
 
+  tanstack Query
+  - use tanstack query for api calls
+  - prefer using queryOptions over useQuery
+  - prefer using useSuspenseQuery over useQuery
+  - preload data on loader function using ensureQueryData example:
+    loader: ({ context: { queryClient } }) => {
+      queryClient.ensureQueryData();
+    },
+  
