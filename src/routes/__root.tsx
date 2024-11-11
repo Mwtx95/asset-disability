@@ -1,15 +1,22 @@
-import { createRootRoute, Outlet } from "@tanstack/react-router"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import type { QueryClient } from '@tanstack/react-query';
+import {
+  createRootRouteWithContext,
+  Outlet,
+  redirect,
+} from '@tanstack/react-router';
 
-const queryClient = new QueryClient()
+type RouteContext = {
+  isAuthenticated: boolean;
+  queryClient: QueryClient;
+};
 
-export const Route = createRootRoute({
-  component: () => (
-    <QueryClientProvider client={queryClient}>
-      <DashboardLayout>
-        <Outlet />
-      </DashboardLayout>
-    </QueryClientProvider>
-  ),
-})
+export const Route = createRootRouteWithContext<RouteContext>()({
+  beforeLoad: ({ context: { isAuthenticated }, location }) => {
+    const isLoginPage = location.pathname === '/login';
+
+    if (isLoginPage && !isAuthenticated) return;
+    if (isLoginPage) throw redirect({ to: '/dashboard' });
+    if (!isAuthenticated) throw redirect({ to: '/login' });
+  },
+  component: Outlet,
+});

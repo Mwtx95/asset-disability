@@ -11,109 +11,136 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as UsersImport } from './routes/users'
-import { Route as SettingsImport } from './routes/settings'
-import { Route as ReportsImport } from './routes/reports'
-import { Route as RegistrationImport } from './routes/registration'
-import { Route as NotificationsImport } from './routes/notifications'
-import { Route as AssetsImport } from './routes/assets'
-import { Route as IndexImport } from './routes/index'
+import { Route as AppImport } from './routes/_app'
+import { Route as AuthLoginImport } from './routes/_auth/login'
+import { Route as AppUsersImport } from './routes/_app/users'
+import { Route as AppSettingsImport } from './routes/_app/settings'
+import { Route as AppReportsImport } from './routes/_app/reports'
+import { Route as AppRegistrationImport } from './routes/_app/registration'
+import { Route as AppNotificationsImport } from './routes/_app/notifications'
+import { Route as AppDashboardImport } from './routes/_app/dashboard'
+import { Route as AppAssetsImport } from './routes/_app/assets'
 
 // Create/Update Routes
 
-const UsersRoute = UsersImport.update({
+const AppRoute = AppImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthLoginRoute = AuthLoginImport.update({
+  id: '/_auth/login',
+  path: '/login',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AppUsersRoute = AppUsersImport.update({
   id: '/users',
   path: '/users',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => AppRoute,
 } as any)
 
-const SettingsRoute = SettingsImport.update({
+const AppSettingsRoute = AppSettingsImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => AppRoute,
 } as any)
 
-const ReportsRoute = ReportsImport.update({
+const AppReportsRoute = AppReportsImport.update({
   id: '/reports',
   path: '/reports',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => AppRoute,
 } as any)
 
-const RegistrationRoute = RegistrationImport.update({
+const AppRegistrationRoute = AppRegistrationImport.update({
   id: '/registration',
   path: '/registration',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => AppRoute,
 } as any)
 
-const NotificationsRoute = NotificationsImport.update({
+const AppNotificationsRoute = AppNotificationsImport.update({
   id: '/notifications',
   path: '/notifications',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => AppRoute,
 } as any)
 
-const AssetsRoute = AssetsImport.update({
+const AppDashboardRoute = AppDashboardImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppAssetsRoute = AppAssetsImport.update({
   id: '/assets',
   path: '/assets',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const IndexRoute = IndexImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => AppRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AppImport
       parentRoute: typeof rootRoute
     }
-    '/assets': {
-      id: '/assets'
+    '/_app/assets': {
+      id: '/_app/assets'
       path: '/assets'
       fullPath: '/assets'
-      preLoaderRoute: typeof AssetsImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof AppAssetsImport
+      parentRoute: typeof AppImport
     }
-    '/notifications': {
-      id: '/notifications'
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardImport
+      parentRoute: typeof AppImport
+    }
+    '/_app/notifications': {
+      id: '/_app/notifications'
       path: '/notifications'
       fullPath: '/notifications'
-      preLoaderRoute: typeof NotificationsImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof AppNotificationsImport
+      parentRoute: typeof AppImport
     }
-    '/registration': {
-      id: '/registration'
+    '/_app/registration': {
+      id: '/_app/registration'
       path: '/registration'
       fullPath: '/registration'
-      preLoaderRoute: typeof RegistrationImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof AppRegistrationImport
+      parentRoute: typeof AppImport
     }
-    '/reports': {
-      id: '/reports'
+    '/_app/reports': {
+      id: '/_app/reports'
       path: '/reports'
       fullPath: '/reports'
-      preLoaderRoute: typeof ReportsImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof AppReportsImport
+      parentRoute: typeof AppImport
     }
-    '/settings': {
-      id: '/settings'
+    '/_app/settings': {
+      id: '/_app/settings'
       path: '/settings'
       fullPath: '/settings'
-      preLoaderRoute: typeof SettingsImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof AppSettingsImport
+      parentRoute: typeof AppImport
     }
-    '/users': {
-      id: '/users'
+    '/_app/users': {
+      id: '/_app/users'
       path: '/users'
       fullPath: '/users'
-      preLoaderRoute: typeof UsersImport
+      preLoaderRoute: typeof AppUsersImport
+      parentRoute: typeof AppImport
+    }
+    '/_auth/login': {
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginImport
       parentRoute: typeof rootRoute
     }
   }
@@ -121,86 +148,110 @@ declare module '@tanstack/react-router' {
 
 // Create and export the route tree
 
+interface AppRouteChildren {
+  AppAssetsRoute: typeof AppAssetsRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
+  AppRegistrationRoute: typeof AppRegistrationRoute
+  AppReportsRoute: typeof AppReportsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppUsersRoute: typeof AppUsersRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAssetsRoute: AppAssetsRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
+  AppRegistrationRoute: AppRegistrationRoute,
+  AppReportsRoute: AppReportsRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppUsersRoute: AppUsersRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/assets': typeof AssetsRoute
-  '/notifications': typeof NotificationsRoute
-  '/registration': typeof RegistrationRoute
-  '/reports': typeof ReportsRoute
-  '/settings': typeof SettingsRoute
-  '/users': typeof UsersRoute
+  '': typeof AppRouteWithChildren
+  '/assets': typeof AppAssetsRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/notifications': typeof AppNotificationsRoute
+  '/registration': typeof AppRegistrationRoute
+  '/reports': typeof AppReportsRoute
+  '/settings': typeof AppSettingsRoute
+  '/users': typeof AppUsersRoute
+  '/login': typeof AuthLoginRoute
 }
 
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/assets': typeof AssetsRoute
-  '/notifications': typeof NotificationsRoute
-  '/registration': typeof RegistrationRoute
-  '/reports': typeof ReportsRoute
-  '/settings': typeof SettingsRoute
-  '/users': typeof UsersRoute
+  '': typeof AppRouteWithChildren
+  '/assets': typeof AppAssetsRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/notifications': typeof AppNotificationsRoute
+  '/registration': typeof AppRegistrationRoute
+  '/reports': typeof AppReportsRoute
+  '/settings': typeof AppSettingsRoute
+  '/users': typeof AppUsersRoute
+  '/login': typeof AuthLoginRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
-  '/': typeof IndexRoute
-  '/assets': typeof AssetsRoute
-  '/notifications': typeof NotificationsRoute
-  '/registration': typeof RegistrationRoute
-  '/reports': typeof ReportsRoute
-  '/settings': typeof SettingsRoute
-  '/users': typeof UsersRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/assets': typeof AppAssetsRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/notifications': typeof AppNotificationsRoute
+  '/_app/registration': typeof AppRegistrationRoute
+  '/_app/reports': typeof AppReportsRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/users': typeof AppUsersRoute
+  '/_auth/login': typeof AuthLoginRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
+    | ''
     | '/assets'
+    | '/dashboard'
     | '/notifications'
     | '/registration'
     | '/reports'
     | '/settings'
     | '/users'
+    | '/login'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | ''
     | '/assets'
+    | '/dashboard'
     | '/notifications'
     | '/registration'
     | '/reports'
     | '/settings'
     | '/users'
+    | '/login'
   id:
     | '__root__'
-    | '/'
-    | '/assets'
-    | '/notifications'
-    | '/registration'
-    | '/reports'
-    | '/settings'
-    | '/users'
+    | '/_app'
+    | '/_app/assets'
+    | '/_app/dashboard'
+    | '/_app/notifications'
+    | '/_app/registration'
+    | '/_app/reports'
+    | '/_app/settings'
+    | '/_app/users'
+    | '/_auth/login'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AssetsRoute: typeof AssetsRoute
-  NotificationsRoute: typeof NotificationsRoute
-  RegistrationRoute: typeof RegistrationRoute
-  ReportsRoute: typeof ReportsRoute
-  SettingsRoute: typeof SettingsRoute
-  UsersRoute: typeof UsersRoute
+  AppRoute: typeof AppRouteWithChildren
+  AuthLoginRoute: typeof AuthLoginRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AssetsRoute: AssetsRoute,
-  NotificationsRoute: NotificationsRoute,
-  RegistrationRoute: RegistrationRoute,
-  ReportsRoute: ReportsRoute,
-  SettingsRoute: SettingsRoute,
-  UsersRoute: UsersRoute,
+  AppRoute: AppRouteWithChildren,
+  AuthLoginRoute: AuthLoginRoute,
 }
 
 export const routeTree = rootRoute
@@ -213,35 +264,52 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/",
-        "/assets",
-        "/notifications",
-        "/registration",
-        "/reports",
-        "/settings",
-        "/users"
+        "/_app",
+        "/_auth/login"
       ]
     },
-    "/": {
-      "filePath": "index.tsx"
+    "/_app": {
+      "filePath": "_app.tsx",
+      "children": [
+        "/_app/assets",
+        "/_app/dashboard",
+        "/_app/notifications",
+        "/_app/registration",
+        "/_app/reports",
+        "/_app/settings",
+        "/_app/users"
+      ]
     },
-    "/assets": {
-      "filePath": "assets.tsx"
+    "/_app/assets": {
+      "filePath": "_app/assets.tsx",
+      "parent": "/_app"
     },
-    "/notifications": {
-      "filePath": "notifications.tsx"
+    "/_app/dashboard": {
+      "filePath": "_app/dashboard.tsx",
+      "parent": "/_app"
     },
-    "/registration": {
-      "filePath": "registration.tsx"
+    "/_app/notifications": {
+      "filePath": "_app/notifications.tsx",
+      "parent": "/_app"
     },
-    "/reports": {
-      "filePath": "reports.tsx"
+    "/_app/registration": {
+      "filePath": "_app/registration.tsx",
+      "parent": "/_app"
     },
-    "/settings": {
-      "filePath": "settings.tsx"
+    "/_app/reports": {
+      "filePath": "_app/reports.tsx",
+      "parent": "/_app"
     },
-    "/users": {
-      "filePath": "users.tsx"
+    "/_app/settings": {
+      "filePath": "_app/settings.tsx",
+      "parent": "/_app"
+    },
+    "/_app/users": {
+      "filePath": "_app/users.tsx",
+      "parent": "/_app"
+    },
+    "/_auth/login": {
+      "filePath": "_auth/login.tsx"
     }
   }
 }

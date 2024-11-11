@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { Button } from "@/components/ui/button"
+import { createFileRoute } from '@tanstack/react-router'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -7,8 +7,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { ChevronRight } from "lucide-react"
+} from '@/components/ui/table'
+import { ChevronRight } from 'lucide-react'
 
 interface Registration {
   id: number
@@ -21,15 +21,15 @@ interface Registration {
 const registrations: Registration[] = [
   {
     id: 1,
-    firstName: "Self",
-    middleName: "Mwita",
-    lastName: "Mgeni",
-    status: "DECLARATION",
+    firstName: 'Self',
+    middleName: 'Mwita',
+    lastName: 'Mgeni',
+    status: 'DECLARATION',
   },
   // ... add more sample data
 ]
 
-export const Route = createFileRoute('/registration')({
+export const Route = createFileRoute('/_app/registration')({
   component: RegistrationPage,
 })
 
@@ -75,4 +75,4 @@ function RegistrationPage() {
       </div>
     </div>
   )
-} 
+}
