@@ -14,9 +14,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className='flex min-h-screen flex-col'>
-      {/* Header */}
-      <header className='sticky top-0 z-50 flex h-16 items-center border-b px-4 pl-0 dark:bg-gray-950 shadow bg-green-50'>
-        <div className='h-full w-64 border-r flex items-center gap-8 border-gray-100 bg-gradient-to-r from-green-700 via-lime-600 to-yellow-600 shadow-lg shadow-green-900/20'>
+      <header className='sticky top-0 z-50 flex h-16 items-center border-b px-4 pl-0 dark:bg-gray-950 shadow bg-gradient-to-r from-yellow-50 to-green-100'>
+        <div className='h-full w-64 border-r flex items-center gap-8 border-gray-100 bg-gradient-to-r from-green-400 via-lime-500 to-yellow-500 shadow-lg shadow-green-900/20'>
           <Button
             variant='link'
             size='icon'
@@ -37,7 +36,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       <div className='flex-1 items-start'>
         <div className='grid lg:grid-cols-[250px_1fr]'>
-          {/* Sidebar */}
           <aside
             className={cn(
               'fixed shadow left-0 z-40 h-full w-64 transform border-r bg-white transition-transform dark:bg-gray-950',
@@ -49,8 +47,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <DashboardNav />
             </ScrollArea>
           </aside>
-
-          {/* Main Content */}
           <main className='flex-1 overflow-y-auto p-6 bg-slate-50'>
             {children}
           </main>

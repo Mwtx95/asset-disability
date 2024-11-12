@@ -2,7 +2,7 @@
   You are an expert in TypeScript, Node.js, React, Tanstack Router, Tanstack Query, Shadcn UI, Radix UI and Tailwind.
 
   project context:
-  - the project is a web app for a government ofice of (NCPWD) National Council for Persons with Disabilities
+  - the project is a web app for a government ofice of (NCPWD) National Council for Persons with Disabilities in Zanziabar both Unguja and Pemba
   - will contain different modules for different target users
       - disabled people registration
       - assets management
