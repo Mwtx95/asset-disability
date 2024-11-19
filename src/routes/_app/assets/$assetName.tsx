@@ -75,7 +75,7 @@ function AssetDetailsRoute() {
         locationId: values.locationId,
       });
       setIsTransferDialogOpen(false);
-      form.reset();
+      form.setValue('locationId', undefined as any);
     } catch (error) {
       console.error('Failed to transfer asset:', error);
     }
@@ -83,20 +83,20 @@ function AssetDetailsRoute() {
 
   return (
     <div className='container mx-auto py-6'>
-      <div className="mb-6">
+      <div className='mb-6'>
         <Link
-          to="/assets"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
+          to='/assets'
+          className='inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4'
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className='h-4 w-4' />
           Back to Assets
         </Link>
         {filteredAssetsByAssetName?.[0] && (
-          <div className="space-y-1">
-            <h2 className="text-2xl font-semibold tracking-tight">
+          <div className='space-y-1'>
+            <h2 className='text-2xl font-semibold tracking-tight'>
               {filteredAssetsByAssetName[0].name}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className='text-sm text-muted-foreground'>
               Category: {filteredAssetsByAssetName[0].categoryName}
             </p>
           </div>
@@ -134,18 +134,21 @@ function AssetDetailsRoute() {
                   </span>
                 </TableCell>
                 <TableCell className='flex gap-2 justify-center'>
-                  <Button variant='secondary' size="sm">
-                    <Pencil className="h-4 w-4" />
+                  <Button variant='secondary' size='sm'>
+                    <Pencil className='h-4 w-4' />
                     Edit
                   </Button>
-                  <Button variant='outline' size="sm">
-                    <UserPlus className="h-4 w-4" />
+                  <Button variant='outline' size='sm'>
+                    <UserPlus className='h-4 w-4' />
                     Assign
                   </Button>
-                  <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
+                  <Dialog
+                    open={isTransferDialogOpen}
+                    onOpenChange={setIsTransferDialogOpen}
+                  >
                     <DialogTrigger asChild>
-                      <Button size="sm">
-                        <ArrowRightLeft className="h-4 w-4" />
+                      <Button size='sm'>
+                        <ArrowRightLeft className='h-4 w-4' />
                         Transfer
                       </Button>
                     </DialogTrigger>
@@ -154,21 +157,24 @@ function AssetDetailsRoute() {
                         <DialogTitle>Transfer Asset</DialogTitle>
                       </DialogHeader>
                       <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <form
+                          onSubmit={form.handleSubmit(onSubmit)}
+                          className='space-y-4'
+                        >
                           <FormItem>
                             <FormLabel>Current Location</FormLabel>
                             <FormControl>
-                              <Input 
-                                value={asset.locationName} 
-                                readOnly 
+                              <Input
+                                value={asset.locationName}
+                                readOnly
                                 disabled
-                                className="bg-muted"
+                                className='bg-muted'
                               />
                             </FormControl>
                           </FormItem>
                           <FormField
                             control={form.control}
-                            name="locationId"
+                            name='locationId'
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>New Location</FormLabel>
@@ -178,12 +184,15 @@ function AssetDetailsRoute() {
                                 >
                                   <FormControl>
                                     <SelectTrigger>
-                                      <SelectValue placeholder="Select a location" />
+                                      <SelectValue placeholder='Select a location' />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
                                     {locations
-                                      .filter(location => location.name !== asset.locationName)
+                                      .filter(
+                                        location =>
+                                          location.name !== asset.locationName
+                                      )
                                       .map(location => (
                                         <SelectItem
                                           key={location.id}
@@ -198,11 +207,13 @@ function AssetDetailsRoute() {
                             )}
                           />
                           <Button
-                            type="submit"
-                            className="w-full"
+                            type='submit'
+                            className='w-full'
                             disabled={transferAsset.isPending}
                           >
-                            {transferAsset.isPending ? "Transferring..." : "Transfer Asset"}
+                            {transferAsset.isPending
+                              ? 'Transferring...'
+                              : 'Transfer Asset'}
                           </Button>
                         </form>
                       </Form>

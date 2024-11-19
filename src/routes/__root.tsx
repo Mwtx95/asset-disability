@@ -4,6 +4,7 @@ import {
   Outlet,
   redirect,
 } from '@tanstack/react-router';
+import axios from 'axios';
 
 type RouteContext = {
   isAuthenticated: boolean;

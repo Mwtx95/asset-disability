@@ -35,7 +35,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <RouterProvider
         router={router}
-        context={{ isAuthenticated: true, queryClient }}
+        context={{ isAuthenticated: false, queryClient }}
       />
     </QueryClientProvider>
   );

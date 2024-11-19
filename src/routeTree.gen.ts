@@ -10,152 +10,152 @@
 
 // Import Routes
 
-import { Route as rootRoute } from './routes/__root';
-import { Route as AppImport } from './routes/_app';
-import { Route as AuthLoginImport } from './routes/_auth/login';
-import { Route as AppSettingsImport } from './routes/_app/settings';
-import { Route as AppReportsImport } from './routes/_app/reports';
-import { Route as AppRegistrationImport } from './routes/_app/registration';
-import { Route as AppNotificationsImport } from './routes/_app/notifications';
-import { Route as AppDashboardImport } from './routes/_app/dashboard';
-import { Route as AppAssetsIndexImport } from './routes/_app/assets/index';
-import { Route as AppAssetsAssetNameImport } from './routes/_app/assets/$assetName';
+import { Route as rootRoute } from './routes/__root'
+import { Route as AppImport } from './routes/_app'
+import { Route as AuthLoginImport } from './routes/_auth/login'
+import { Route as AppSettingsImport } from './routes/_app/settings'
+import { Route as AppReportsImport } from './routes/_app/reports'
+import { Route as AppRegistrationImport } from './routes/_app/registration'
+import { Route as AppNotificationsImport } from './routes/_app/notifications'
+import { Route as AppDashboardImport } from './routes/_app/dashboard'
+import { Route as AppAssetsIndexImport } from './routes/_app/assets/index'
+import { Route as AppAssetsAssetNameImport } from './routes/_app/assets/$assetName'
 
 // Create/Update Routes
 
 const AppRoute = AppImport.update({
   id: '/_app',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const AuthLoginRoute = AuthLoginImport.update({
   id: '/_auth/login',
   path: '/login',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const AppSettingsRoute = AppSettingsImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 
 const AppReportsRoute = AppReportsImport.update({
   id: '/reports',
   path: '/reports',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 
 const AppRegistrationRoute = AppRegistrationImport.update({
   id: '/registration',
   path: '/registration',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 
 const AppNotificationsRoute = AppNotificationsImport.update({
   id: '/notifications',
   path: '/notifications',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 
 const AppDashboardRoute = AppDashboardImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 
 const AppAssetsIndexRoute = AppAssetsIndexImport.update({
   id: '/assets/',
   path: '/assets/',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 
 const AppAssetsAssetNameRoute = AppAssetsAssetNameImport.update({
   id: '/assets/$assetName',
   path: '/assets/$assetName',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/_app': {
-      id: '/_app';
-      path: '';
-      fullPath: '';
-      preLoaderRoute: typeof AppImport;
-      parentRoute: typeof rootRoute;
-    };
+      id: '/_app'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AppImport
+      parentRoute: typeof rootRoute
+    }
     '/_app/dashboard': {
-      id: '/_app/dashboard';
-      path: '/dashboard';
-      fullPath: '/dashboard';
-      preLoaderRoute: typeof AppDashboardImport;
-      parentRoute: typeof AppImport;
-    };
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardImport
+      parentRoute: typeof AppImport
+    }
     '/_app/notifications': {
-      id: '/_app/notifications';
-      path: '/notifications';
-      fullPath: '/notifications';
-      preLoaderRoute: typeof AppNotificationsImport;
-      parentRoute: typeof AppImport;
-    };
+      id: '/_app/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AppNotificationsImport
+      parentRoute: typeof AppImport
+    }
     '/_app/registration': {
-      id: '/_app/registration';
-      path: '/registration';
-      fullPath: '/registration';
-      preLoaderRoute: typeof AppRegistrationImport;
-      parentRoute: typeof AppImport;
-    };
+      id: '/_app/registration'
+      path: '/registration'
+      fullPath: '/registration'
+      preLoaderRoute: typeof AppRegistrationImport
+      parentRoute: typeof AppImport
+    }
     '/_app/reports': {
-      id: '/_app/reports';
-      path: '/reports';
-      fullPath: '/reports';
-      preLoaderRoute: typeof AppReportsImport;
-      parentRoute: typeof AppImport;
-    };
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsImport
+      parentRoute: typeof AppImport
+    }
     '/_app/settings': {
-      id: '/_app/settings';
-      path: '/settings';
-      fullPath: '/settings';
-      preLoaderRoute: typeof AppSettingsImport;
-      parentRoute: typeof AppImport;
-    };
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsImport
+      parentRoute: typeof AppImport
+    }
     '/_auth/login': {
-      id: '/_auth/login';
-      path: '/login';
-      fullPath: '/login';
-      preLoaderRoute: typeof AuthLoginImport;
-      parentRoute: typeof rootRoute;
-    };
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginImport
+      parentRoute: typeof rootRoute
+    }
     '/_app/assets/$assetName': {
-      id: '/_app/assets/$assetName';
-      path: '/assets/$assetName';
-      fullPath: '/assets/$assetName';
-      preLoaderRoute: typeof AppAssetsAssetNameImport;
-      parentRoute: typeof AppImport;
-    };
+      id: '/_app/assets/$assetName'
+      path: '/assets/$assetName'
+      fullPath: '/assets/$assetName'
+      preLoaderRoute: typeof AppAssetsAssetNameImport
+      parentRoute: typeof AppImport
+    }
     '/_app/assets/': {
-      id: '/_app/assets/';
-      path: '/assets';
-      fullPath: '/assets';
-      preLoaderRoute: typeof AppAssetsIndexImport;
-      parentRoute: typeof AppImport;
-    };
+      id: '/_app/assets/'
+      path: '/assets'
+      fullPath: '/assets'
+      preLoaderRoute: typeof AppAssetsIndexImport
+      parentRoute: typeof AppImport
+    }
   }
 }
 
 // Create and export the route tree
 
 interface AppRouteChildren {
-  AppDashboardRoute: typeof AppDashboardRoute;
-  AppNotificationsRoute: typeof AppNotificationsRoute;
-  AppRegistrationRoute: typeof AppRegistrationRoute;
-  AppReportsRoute: typeof AppReportsRoute;
-  AppSettingsRoute: typeof AppSettingsRoute;
-  AppAssetsAssetNameRoute: typeof AppAssetsAssetNameRoute;
-  AppAssetsIndexRoute: typeof AppAssetsIndexRoute;
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
+  AppRegistrationRoute: typeof AppRegistrationRoute
+  AppReportsRoute: typeof AppReportsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppAssetsAssetNameRoute: typeof AppAssetsAssetNameRoute
+  AppAssetsIndexRoute: typeof AppAssetsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -166,49 +166,49 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppAssetsAssetNameRoute: AppAssetsAssetNameRoute,
   AppAssetsIndexRoute: AppAssetsIndexRoute,
-};
+}
 
-const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren);
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 export interface FileRoutesByFullPath {
-  '': typeof AppRouteWithChildren;
-  '/dashboard': typeof AppDashboardRoute;
-  '/notifications': typeof AppNotificationsRoute;
-  '/registration': typeof AppRegistrationRoute;
-  '/reports': typeof AppReportsRoute;
-  '/settings': typeof AppSettingsRoute;
-  '/login': typeof AuthLoginRoute;
-  '/assets/$assetName': typeof AppAssetsAssetNameRoute;
-  '/assets': typeof AppAssetsIndexRoute;
+  '': typeof AppRouteWithChildren
+  '/dashboard': typeof AppDashboardRoute
+  '/notifications': typeof AppNotificationsRoute
+  '/registration': typeof AppRegistrationRoute
+  '/reports': typeof AppReportsRoute
+  '/settings': typeof AppSettingsRoute
+  '/login': typeof AuthLoginRoute
+  '/assets/$assetName': typeof AppAssetsAssetNameRoute
+  '/assets': typeof AppAssetsIndexRoute
 }
 
 export interface FileRoutesByTo {
-  '': typeof AppRouteWithChildren;
-  '/dashboard': typeof AppDashboardRoute;
-  '/notifications': typeof AppNotificationsRoute;
-  '/registration': typeof AppRegistrationRoute;
-  '/reports': typeof AppReportsRoute;
-  '/settings': typeof AppSettingsRoute;
-  '/login': typeof AuthLoginRoute;
-  '/assets/$assetName': typeof AppAssetsAssetNameRoute;
-  '/assets': typeof AppAssetsIndexRoute;
+  '': typeof AppRouteWithChildren
+  '/dashboard': typeof AppDashboardRoute
+  '/notifications': typeof AppNotificationsRoute
+  '/registration': typeof AppRegistrationRoute
+  '/reports': typeof AppReportsRoute
+  '/settings': typeof AppSettingsRoute
+  '/login': typeof AuthLoginRoute
+  '/assets/$assetName': typeof AppAssetsAssetNameRoute
+  '/assets': typeof AppAssetsIndexRoute
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute;
-  '/_app': typeof AppRouteWithChildren;
-  '/_app/dashboard': typeof AppDashboardRoute;
-  '/_app/notifications': typeof AppNotificationsRoute;
-  '/_app/registration': typeof AppRegistrationRoute;
-  '/_app/reports': typeof AppReportsRoute;
-  '/_app/settings': typeof AppSettingsRoute;
-  '/_auth/login': typeof AuthLoginRoute;
-  '/_app/assets/$assetName': typeof AppAssetsAssetNameRoute;
-  '/_app/assets/': typeof AppAssetsIndexRoute;
+  __root__: typeof rootRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/notifications': typeof AppNotificationsRoute
+  '/_app/registration': typeof AppRegistrationRoute
+  '/_app/reports': typeof AppReportsRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_auth/login': typeof AuthLoginRoute
+  '/_app/assets/$assetName': typeof AppAssetsAssetNameRoute
+  '/_app/assets/': typeof AppAssetsIndexRoute
 }
 
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | ''
     | '/dashboard'
@@ -218,8 +218,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/login'
     | '/assets/$assetName'
-    | '/assets';
-  fileRoutesByTo: FileRoutesByTo;
+    | '/assets'
+  fileRoutesByTo: FileRoutesByTo
   to:
     | ''
     | '/dashboard'
@@ -229,7 +229,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/login'
     | '/assets/$assetName'
-    | '/assets';
+    | '/assets'
   id:
     | '__root__'
     | '/_app'
@@ -240,23 +240,23 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_auth/login'
     | '/_app/assets/$assetName'
-    | '/_app/assets/';
-  fileRoutesById: FileRoutesById;
+    | '/_app/assets/'
+  fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  AppRoute: typeof AppRouteWithChildren;
-  AuthLoginRoute: typeof AuthLoginRoute;
+  AppRoute: typeof AppRouteWithChildren
+  AuthLoginRoute: typeof AuthLoginRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthLoginRoute: AuthLoginRoute,
-};
+}
 
 export const routeTree = rootRoute
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
 /* ROUTE_MANIFEST_START
 {

@@ -1,6 +1,12 @@
-import { QueryFunctionContext, queryOptions, useQueryClient, useMutation } from '@tanstack/react-query';
+import {
+  QueryFunctionContext,
+  queryOptions,
+  useQueryClient,
+  useMutation,
+} from '@tanstack/react-query';
 import axios from 'axios';
-import toast from 'react-hot-toast'; // Assuming you have react-hot-toast installed
+import { toast } from 'sonner';
+// import toast from 'react-hot-toast'; // Assuming you have react-hot-toast installed
 
 export interface Asset {
   id: number;
@@ -43,11 +49,18 @@ async function fetchAsset({ queryKey }: QueryFunctionContext) {
   return data;
 }
 
+interface TransferAssetMutationArgs {
+  assetId: string;
+  locationId: number;
+}
+
 export function useTransferAssetMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ assetId, locationId }: { assetId: string; locationId: number }) => {
-      const { data } = await axios.patch<Asset>(`/assets/${assetId}/transfer`, { locationId });
+    mutationFn: async ({ assetId, locationId }: TransferAssetMutationArgs) => {
+      const { data } = await axios.patch<Asset>(
+        `/assets/${assetId}/transfer/${locationId}`
+      );
       return data;
     },
     onSuccess: () => {
