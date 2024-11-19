@@ -19,6 +19,7 @@ import { Route as AppRegistrationImport } from './routes/_app/registration'
 import { Route as AppNotificationsImport } from './routes/_app/notifications'
 import { Route as AppDashboardImport } from './routes/_app/dashboard'
 import { Route as AppAssetsImport } from './routes/_app/assets'
+import { Route as AppAssetsAssetIdImport } from './routes/_app/assets/$assetId'
 
 // Create/Update Routes
 
@@ -67,6 +68,12 @@ const AppAssetsRoute = AppAssetsImport.update({
   id: '/assets',
   path: '/assets',
   getParentRoute: () => AppRoute,
+} as any)
+
+const AppAssetsAssetIdRoute = AppAssetsAssetIdImport.update({
+  id: '/$assetId',
+  path: '/$assetId',
+  getParentRoute: () => AppAssetsRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -129,13 +136,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginImport
       parentRoute: typeof rootRoute
     }
+    '/_app/assets/$assetId': {
+      id: '/_app/assets/$assetId'
+      path: '/$assetId'
+      fullPath: '/assets/$assetId'
+      preLoaderRoute: typeof AppAssetsAssetIdImport
+      parentRoute: typeof AppAssetsImport
+    }
   }
 }
 
 // Create and export the route tree
 
+interface AppAssetsRouteChildren {
+  AppAssetsAssetIdRoute: typeof AppAssetsAssetIdRoute
+}
+
+const AppAssetsRouteChildren: AppAssetsRouteChildren = {
+  AppAssetsAssetIdRoute: AppAssetsAssetIdRoute,
+}
+
+const AppAssetsRouteWithChildren = AppAssetsRoute._addFileChildren(
+  AppAssetsRouteChildren,
+)
+
 interface AppRouteChildren {
-  AppAssetsRoute: typeof AppAssetsRoute
+  AppAssetsRoute: typeof AppAssetsRouteWithChildren
   AppDashboardRoute: typeof AppDashboardRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppRegistrationRoute: typeof AppRegistrationRoute
@@ -144,7 +170,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppAssetsRoute: AppAssetsRoute,
+  AppAssetsRoute: AppAssetsRouteWithChildren,
   AppDashboardRoute: AppDashboardRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppRegistrationRoute: AppRegistrationRoute,
@@ -156,36 +182,39 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 export interface FileRoutesByFullPath {
   '': typeof AppRouteWithChildren
-  '/assets': typeof AppAssetsRoute
+  '/assets': typeof AppAssetsRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
   '/notifications': typeof AppNotificationsRoute
   '/registration': typeof AppRegistrationRoute
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
   '/login': typeof AuthLoginRoute
+  '/assets/$assetId': typeof AppAssetsAssetIdRoute
 }
 
 export interface FileRoutesByTo {
   '': typeof AppRouteWithChildren
-  '/assets': typeof AppAssetsRoute
+  '/assets': typeof AppAssetsRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
   '/notifications': typeof AppNotificationsRoute
   '/registration': typeof AppRegistrationRoute
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
   '/login': typeof AuthLoginRoute
+  '/assets/$assetId': typeof AppAssetsAssetIdRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/_app': typeof AppRouteWithChildren
-  '/_app/assets': typeof AppAssetsRoute
+  '/_app/assets': typeof AppAssetsRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/registration': typeof AppRegistrationRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_auth/login': typeof AuthLoginRoute
+  '/_app/assets/$assetId': typeof AppAssetsAssetIdRoute
 }
 
 export interface FileRouteTypes {
@@ -199,6 +228,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/login'
+    | '/assets/$assetId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | ''
@@ -209,6 +239,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/login'
+    | '/assets/$assetId'
   id:
     | '__root__'
     | '/_app'
@@ -219,6 +250,7 @@ export interface FileRouteTypes {
     | '/_app/reports'
     | '/_app/settings'
     | '/_auth/login'
+    | '/_app/assets/$assetId'
   fileRoutesById: FileRoutesById
 }
 
@@ -259,7 +291,10 @@ export const routeTree = rootRoute
     },
     "/_app/assets": {
       "filePath": "_app/assets.tsx",
-      "parent": "/_app"
+      "parent": "/_app",
+      "children": [
+        "/_app/assets/$assetId"
+      ]
     },
     "/_app/dashboard": {
       "filePath": "_app/dashboard.tsx",
@@ -283,6 +318,10 @@ export const routeTree = rootRoute
     },
     "/_auth/login": {
       "filePath": "_auth/login.tsx"
+    },
+    "/_app/assets/$assetId": {
+      "filePath": "_app/assets/$assetId.tsx",
+      "parent": "/_app/assets"
     }
   }
 }
