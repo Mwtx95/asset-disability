@@ -12,6 +12,7 @@ import {
 import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ASSET_STATUS_BADGE_MAP } from '@/lib/constants';
+import { Pencil, UserPlus, ArrowRightLeft } from 'lucide-react';
 
 export const Route = createFileRoute('/_app/assets/$assetName')({
   loader: ({ context: { queryClient } }) => {
@@ -30,12 +31,20 @@ function AssetDetailsRoute() {
 
   return (
     <div className='container mx-auto py-6'>
+      {filteredAssetsByAssetName?.[0] && (
+        <div className="mb-6 space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight">
+            {filteredAssetsByAssetName[0].name}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Category: {filteredAssetsByAssetName[0].categoryName}
+          </p>
+        </div>
+      )}
       <div className='relative w-full overflow-auto'>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className='min-w-[150px]'>Name</TableHead>
-              <TableHead className='min-w-[120px]'>Category</TableHead>
               <TableHead className='min-w-[120px]'>Location</TableHead>
               <TableHead className='min-w-[150px]'>Assigned To</TableHead>
               <TableHead className='min-w-[100px]'>Status</TableHead>
@@ -47,8 +56,6 @@ function AssetDetailsRoute() {
           <TableBody>
             {filteredAssetsByAssetName?.map(asset => (
               <TableRow key={asset.id}>
-                <TableCell className='font-medium'>{asset.name}</TableCell>
-                <TableCell>{asset.categoryName}</TableCell>
                 <TableCell>{asset.locationName}</TableCell>
                 <TableCell className='text-center'>
                   {asset.assignedTo}
@@ -66,9 +73,18 @@ function AssetDetailsRoute() {
                   </span>
                 </TableCell>
                 <TableCell className='flex gap-2 justify-center'>
-                  <Button variant='outline'>Assign</Button>
-                  <Button>Transfer</Button>
-                  <Button variant='secondary'>Edit</Button>
+                  <Button variant='secondary' size="sm">
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </Button>
+                  <Button variant='outline' size="sm">
+                    <UserPlus className="h-4 w-4" />
+                    Assign
+                  </Button>
+                  <Button size="sm">
+                    <ArrowRightLeft className="h-4 w-4" />
+                    Transfer
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
