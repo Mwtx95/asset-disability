@@ -1,5 +1,6 @@
-import { QueryFunctionContext, queryOptions } from '@tanstack/react-query';
+import { QueryFunctionContext, queryOptions, useQueryClient, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
+import toast from 'react-hot-toast'; // Assuming you have react-hot-toast installed
 
 export interface Asset {
   id: number;
@@ -40,4 +41,21 @@ async function fetchAsset({ queryKey }: QueryFunctionContext) {
   const [_, assetId] = queryKey;
   const { data } = await axios.get<Asset>(`/assets/${assetId}`);
   return data;
+}
+
+export function useTransferAssetMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ assetId, locationId }: { assetId: string; locationId: number }) => {
+      const { data } = await axios.patch<Asset>(`/assets/${assetId}/transfer`, { locationId });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      toast.success('Asset transferred successfully');
+    },
+    onError: () => {
+      toast.error('Failed to transfer asset');
+    },
+  });
 }
