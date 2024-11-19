@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -17,16 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Asset, assetsQueryOptions } from '@/queries/assets';
+import { assetsQueryOptions } from '@/queries/assets';
 import { categoriesQueryOptions } from '@/queries/categories';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { PlusCircle, Search, ArrowLeftIcon } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 
 const ASSET_STATUSES = ['All Statuses', 'ACTIVE', 'INACTIVE', 'MAINTENANCE'];
 
-export const Route = createFileRoute('/_app/assets')({
+export const Route = createFileRoute('/_app/assets/')({
   loader: ({ context: { queryClient } }) => {
     queryClient.ensureQueryData(assetsQueryOptions);
   },
@@ -34,6 +33,7 @@ export const Route = createFileRoute('/_app/assets')({
 });
 
 function AssetsRoute() {
+  const navigate = Route.useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedStatus, setSelectedStatus] = useState('All Statuses');
@@ -54,11 +54,12 @@ function AssetsRoute() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const assetsByCategory = filteredAssets?.reduce(
+  const assetsByAssetName = filteredAssets?.reduce(
     (acc, asset) => {
       // Initialize category if it doesn't exist
-      if (!acc[asset.categoryName]) {
-        acc[asset.categoryName] = {
+      if (!acc[asset.name]) {
+        acc[asset.name] = {
+          id: asset.id.toString(),
           name: asset.name,
           categoryName: asset.categoryName,
           numberOfAssets: 0,
@@ -69,17 +70,17 @@ function AssetsRoute() {
       }
 
       // Increment total count
-      acc[asset.categoryName].numberOfAssets++;
+      acc[asset.name].numberOfAssets++;
       // Increment status count
       switch (asset.status) {
         case 'Available':
-          acc[asset.categoryName].Available++;
+          acc[asset.name].Available++;
           break;
         case 'Maintenance':
-          acc[asset.categoryName].Maintenance++;
+          acc[asset.name].Maintenance++;
           break;
         case 'Rented':
-          acc[asset.categoryName].Rented++;
+          acc[asset.name].Rented++;
           break;
       }
 
@@ -88,6 +89,7 @@ function AssetsRoute() {
     {} as Record<
       string,
       {
+        id: string;
         name: string;
         categoryName: string;
         numberOfAssets: number;
@@ -99,9 +101,9 @@ function AssetsRoute() {
   );
 
   // Convert the object to array format
-  const assetsByCategoryArray = Object.values(assetsByCategory || {});
+  const assetsByAssetNameArray = Object.values(assetsByAssetName || {});
 
-  console.log(JSON.stringify(assetsByCategoryArray, null, 2));
+  console.log(JSON.stringify(assetsByAssetNameArray, null, 2));
 
   return (
     <div className='container mx-auto py-8 space-y-6'>
@@ -148,18 +150,48 @@ function AssetsRoute() {
           </SelectContent>
         </Select>
       </div>
-
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-        {assetsByCategoryArray.map(category => (
-          <Card key={category.name}>
-            <CardHeader>{category.name}</CardHeader>
+        {assetsByAssetNameArray.map(asset => (
+          <Card
+            key={asset.name}
+            className='hover:shadow-md transition-shadow cursor-pointer'
+            onClick={() =>
+              navigate({
+                to: '/assets/$assetName',
+                params: { assetName: asset.name },
+              })
+            }
+          >
+            <CardHeader className='pb-2 flex flex-row justify-between'>
+              <div>
+                <h3 className='font-semibold text-lg'>{asset.name}</h3>
+                <p className='text-sm text-muted-foreground'>
+                  {asset.categoryName}
+                </p>
+              </div>
+              <p className='text-sm text-muted-foreground'>
+                {asset.numberOfAssets} assets
+              </p>
+            </CardHeader>
             <CardContent>
-              <p>{category.numberOfAssets}</p>
+              <div className='flex flex-wrap gap-2'>
+                <Badge variant='secondary' className='flex items-center gap-1'>
+                  <span className='h-2 w-2 rounded-full bg-green-500'></span>
+                  Available: {asset.Available}
+                </Badge>
+                <Badge variant='secondary' className='flex items-center gap-1'>
+                  <span className='h-2 w-2 rounded-full bg-yellow-500'></span>
+                  Maintenance: {asset.Maintenance}
+                </Badge>
+                <Badge variant='secondary' className='flex items-center gap-1'>
+                  <span className='h-2 w-2 rounded-full bg-blue-500'></span>
+                  Rented: {asset.Rented}
+                </Badge>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
-
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent>
           <DialogHeader>

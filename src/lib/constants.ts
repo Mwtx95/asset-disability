@@ -6,10 +6,30 @@ export const ASSET_CATEGORIES = [
   'Vehicles',
 ] as const;
 
-export const ASSET_STATUSES = [
-  'All Statuses',
-  'Available',
-  'Maintenance',
-  'Rented',
-  'Not Available',
-] as const;
+export const ASSET_STATUSES = {
+  ALL: 'All Statuses',
+  AVAILABLE: 'Available',
+  MAINTENANCE: 'Maintenance',
+  RENTED: 'Rented',
+  NOT_AVAILABLE: 'Not Available',
+} as const;
+
+export const ASSET_STATUS_BADGE_MAP = {
+  [ASSET_STATUSES.AVAILABLE]: {
+    label: ASSET_STATUSES.AVAILABLE,
+    color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+  },
+  [ASSET_STATUSES.MAINTENANCE]: {
+    label: ASSET_STATUSES.MAINTENANCE,
+    color:
+      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+  },
+  [ASSET_STATUSES.RENTED]: {
+    label: ASSET_STATUSES.RENTED,
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+  },
+  [ASSET_STATUSES.NOT_AVAILABLE]: {
+    label: ASSET_STATUSES.NOT_AVAILABLE,
+    color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+  },
+} as const;

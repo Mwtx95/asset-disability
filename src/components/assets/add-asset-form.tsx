@@ -129,10 +129,8 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {ASSET_STATUSES.filter(
-                    status => status !== 'All Statuses'
-                  ).map(status => (
-                    <SelectItem key={status} value={status.replace(/\s+/g, '')}>
+                  {Object.values(ASSET_STATUSES).map(status => (
+                    <SelectItem key={status} value={status}>
                       {status}
                     </SelectItem>
                   ))}
