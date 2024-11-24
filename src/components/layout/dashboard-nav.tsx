@@ -4,15 +4,20 @@ import {
   LayoutDashboard,
   Settings,
   Bell,
-  Users,
-  File,
+  FileText,
   Package,
+  ChevronRight,
+  ChevronDown,
+  FileOutput,
+  FileInput,
 } from 'lucide-react';
+import { useState } from 'react';
 
 interface NavItem {
   title: string;
-  href: string;
+  href?: string;
   icon: React.ComponentType<{ className?: string }>;
+  children?: NavItem[];
 }
 
 const navItems: NavItem[] = [
@@ -28,8 +33,19 @@ const navItems: NavItem[] = [
   },
   {
     title: 'Reports',
-    href: '/reports',
-    icon: File,
+    icon: FileText,
+    children: [
+      {
+        title: 'Issued',
+        href: '/reports/issued',
+        icon: FileOutput,
+      },
+      {
+        title: 'Received',
+        href: '/reports/received',
+        icon: FileInput,
+      },
+    ],
   },
   {
     title: 'Notifications',
@@ -44,24 +60,65 @@ const navItems: NavItem[] = [
 ];
 
 export function DashboardNav() {
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+
+  const toggleExpand = (title: string) => {
+    setExpandedItems(prev =>
+      prev.includes(title)
+        ? prev.filter(item => item !== title)
+        : [...prev, title]
+    );
+  };
+
   return (
     <nav className='space-y-1 p-4'>
       {navItems.map(item => (
-        <Link
-          key={item.href}
-          to={item.href}
-          className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium',
-            'hover:bg-gray-100 dark:hover:bg-gray-800',
-            'transition-colors'
+        <div key={item.title}>
+          {item.href ? (
+            <Link
+              to={item.href}
+              className={cn(
+                'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              )}
+            >
+              <item.icon className='mr-3 h-5 w-5 flex-shrink-0' />
+              {item.title}
+            </Link>
+          ) : (
+            <>
+              <button
+                onClick={() => toggleExpand(item.title)}
+                className='flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              >
+                <div className='flex items-center'>
+                  <item.icon className='mr-3 h-5 w-5 flex-shrink-0' />
+                  {item.title}
+                </div>
+                {expandedItems.includes(item.title) ? (
+                  <ChevronDown className='h-4 w-4' />
+                ) : (
+                  <ChevronRight className='h-4 w-4' />
+                )}
+              </button>
+              {item.children && expandedItems.includes(item.title) && (
+                <div className='ml-6 space-y-1'>
+                  {item.children.map(child => (
+                    <Link
+                      key={child.href}
+                      to={child.href!}
+                      className={cn(
+                        'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      )}
+                    >
+                      <child.icon className='mr-3 h-5 w-5 flex-shrink-0' />
+                      {child.title}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </>
           )}
-          activeProps={{
-            className: 'bg-gray-100 dark:bg-gray-800',
-          }}
-        >
-          <item.icon className='size-4' />
-          {item.title}
-        </Link>
+        </div>
       ))}
     </nav>
   );
