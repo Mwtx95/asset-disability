@@ -22,10 +22,14 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { PlusCircle } from 'lucide-react';
 import { useState } from 'react';
+import { z } from 'zod';
 
 const ASSET_STATUSES = ['All Statuses', 'ACTIVE', 'INACTIVE', 'MAINTENANCE'];
 
 export const Route = createFileRoute('/_app/assets/')({
+  validateSearch: z.object({
+    addAsset: z.string().optional().catch(''),
+  }),
   loader: ({ context: { queryClient } }) => {
     queryClient.ensureQueryData(assetsQueryOptions);
   },
@@ -34,13 +38,19 @@ export const Route = createFileRoute('/_app/assets/')({
 
 function AssetsRoute() {
   const navigate = Route.useNavigate();
+  const { addAsset } = Route.useSearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedStatus, setSelectedStatus] = useState('All Statuses');
   const { data: assets } = useSuspenseQuery(assetsQueryOptions);
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions);
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(!!addAsset);
+
+  const handleCloseModal = () => {
+    setIsAddModalOpen(false);
+    navigate({ search: { addAsset: undefined } });
+  };
 
   const filteredAssets = assets?.filter(asset => {
     const matchesSearch = asset.name
@@ -197,7 +207,7 @@ function AssetsRoute() {
           <DialogHeader>
             <DialogTitle>Add New Asset</DialogTitle>
           </DialogHeader>
-          <AddAssetForm onSuccess={() => setIsAddModalOpen(false)} />
+          <AddAssetForm onSuccess={handleCloseModal} />
         </DialogContent>
       </Dialog>
     </div>
