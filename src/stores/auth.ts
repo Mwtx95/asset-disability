@@ -32,25 +32,30 @@ interface User {
 
 const useAuthStore = create<AuthStore>()(
   persist(
-    (set) => ({
+    set => ({
       login: async (email: string, password: string): Promise<void> => {
         try {
-          const { data } = await axios.post<Auth>('/auth/login', {
-            email,
-            password,
-          }, {
-            baseURL: 'https://api.ncpdsmz.go.tz/api/dda/v1'
-          });
-          const {data: user} = await axios.get<User>(`users/${data.id}`)
+          const { data } = await axios.post<Auth>(
+            '/auth/login',
+            {
+              email,
+              password,
+            },
+            {
+              baseURL: 'https://api.ncpdsmz.go.tz/api/dda/v1',
+            }
+          );
+          const { data: user } = await axios.get<User>(
+            `https://api.ncpdsmz.go.tz/api/dda/v1/users/${data.id}`
+          );
 
           set({ user: data });
-          if(user.userRole === 'STORE'){
-          axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-        }else{
-          throw new Error('You are not a store user');
-        }
-          // axios.defaults.headers.common['Authorization'] =
-          //   `Bearer ${data.access}`;
+          if (user.userRole === 'STORE') {
+            axios.defaults.headers.common['Authorization'] =
+              `Bearer ${data.token}`;
+          } else {
+            throw new Error('You are not a store user');
+          }
         } catch (error) {
           throw error;
         }
@@ -64,13 +69,13 @@ const useAuthStore = create<AuthStore>()(
         // } catch (error) {
         //   throw error;
         // }
-      }
+      },
     }),
     {
       name: 'dispatch-type-auth-storage',
       storage: createJSONStorage(() => localStorage),
-    },
-  ),
+    }
+  )
 );
 
 // Intercept 401 responses and try to refresh the token
