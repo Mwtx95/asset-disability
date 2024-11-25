@@ -100,9 +100,6 @@ function AssetDetailsRoute() {
             <h2 className="text-2xl font-semibold tracking-tight">
               {categoryName}
             </h2>
-            <p className="text-sm text-muted-foreground">
-              Category ID: {categoryId}
-            </p>
           </div>
           <Dialog open={isReceiveDialogOpen} onOpenChange={setIsReceiveDialogOpen}>
             <DialogTrigger asChild>
