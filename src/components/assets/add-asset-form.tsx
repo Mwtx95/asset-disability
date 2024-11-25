@@ -15,15 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ASSET_STATUSES } from '@/lib/constants';
 import { categoriesQueryOptions } from '@/queries/categories';
-import { locationQueryOptions } from '@/queries/locations';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -32,8 +26,6 @@ import { z } from 'zod';
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   categoryId: z.coerce.number().min(1, 'Please select a category'),
-  status: z.string().min(1, 'Please select a status'),
-  locationId: z.coerce.number().min(1, 'Please enter a location'),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -45,7 +37,6 @@ interface AddAssetFormProps {
 export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
   const queryClient = useQueryClient();
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions);
-  const { data: locations } = useSuspenseQuery(locationQueryOptions);
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
   });
@@ -107,62 +98,6 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                       value={category.id.toString()}
                     >
                       {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name='status'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder='Select a status' />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Object.values(ASSET_STATUSES).map(status => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name='locationId'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Location</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value?.toString()}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder='Select a location' />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {locations.map(location => (
-                    <SelectItem
-                      key={location.id}
-                      value={location.id.toString()}
-                    >
-                      {location.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
