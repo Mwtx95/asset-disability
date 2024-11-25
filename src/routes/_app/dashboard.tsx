@@ -1,6 +1,13 @@
-import * as React from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { AddAssetForm } from '@/components/assets/add-asset-form';
+import { AssetsListModal } from '@/components/interactive-dashboard-modals/assets-list-modal';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -10,21 +17,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import {
-  Briefcase,
-  Package,
   AlertCircle,
-  Clock,
-  ArrowUpRight,
   ArrowDownRight,
+  ArrowUpRight,
   Building2,
-  CircleDollarSign,
-  Plus,
+  Clock,
   FileText,
+  Package,
+  Plus,
   Settings,
 } from 'lucide-react';
+import * as React from 'react';
 
 interface StatCardProps {
   title: string;
@@ -44,7 +49,7 @@ function StatCard({
   trendValue,
 }: StatCardProps) {
   return (
-    <Card>
+    <Card className='cursor-pointer hover:bg-accent/50 transition-colors'>
       <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
         <CardTitle className='text-sm font-medium'>{title}</CardTitle>
         <div className='h-4 w-4 text-muted-foreground'>{icon}</div>
@@ -128,52 +133,42 @@ const getActionBadge = (action: RecentAssetActivity['action']) => {
   return badges[action];
 };
 
-interface QuickAction {
-  title: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  description: string;
+interface MockAssets {
+  id: string;
+  name: string;
+  department: string;
+  status: 'in-use' | 'available' | 'maintenance';
+  assignedTo?: string;
 }
 
-const quickActions: QuickAction[] = [
+const mockAssets: MockAssets[] = [
   {
-    title: 'Add New Asset',
-    href: '/assets?addAsset=true',
-    icon: Plus,
-    description: 'Register a new disability asset',
+    id: '1',
+    name: 'Hearing Aid Model X',
+    department: 'Audio Department',
+    status: 'in-use',
+    assignedTo: 'John Doe',
   },
   {
-    title: 'Generate Report',
-    href: '/reports/new',
-    icon: FileText,
-    description: 'Create a new asset report',
+    id: '2',
+    name: 'Wheelchair Type A',
+    department: 'Mobility',
+    status: 'available',
   },
   {
-    title: 'Configure Settings',
-    href: '/settings',
-    icon: Settings,
-    description: 'Manage system preferences',
+    id: '3',
+    name: 'Visual Aid Device',
+    department: 'Vision Support',
+    status: 'maintenance',
+  },
+  {
+    id: '4',
+    name: 'Support Crutches',
+    department: 'Mobility',
+    status: 'in-use',
+    assignedTo: 'Jane Smith',
   },
 ];
-
-function QuickActionCard({ title, href, icon: Icon, description }: QuickAction) {
-  return (
-    <Card>
-      <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-        <CardTitle className='text-sm font-medium'>{title}</CardTitle>
-        <div className='h-4 w-4 text-muted-foreground'>
-          <Icon className='h-4 w-4' />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className='text-sm text-muted-foreground'>{description}</p>
-        <Button asChild className='mt-4 w-full'>
-          <Link to={href}>{title}</Link>
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
 
 export const Route = createFileRoute('/_app/dashboard')({
   component: DashboardComponent,
@@ -218,16 +213,22 @@ function DashboardComponent() {
   }
 
   return (
-    <div className='space-y-4'>
+    <div className='flex-1 space-y-4 p-4 md:p-8 pt-6'>
+      <div className='flex items-center justify-between space-y-2'>
+        <h2 className='text-3xl font-bold tracking-tight'>Dashboard</h2>
+      </div>
+
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-        <StatCard
-          title='Total Assets'
-          value='120'
-          icon={<Package className='h-4 w-4' />}
-          description='Active disability assets'
-          trend='up'
-          trendValue='+12.5%'
-        />
+        <AssetsListModal assets={mockAssets}>
+          <StatCard
+            title='Total Assets'
+            value='284'
+            icon={<Package className='h-4 w-4' />}
+            description='Assets in inventory'
+            trend='up'
+            trendValue='+4.5%'
+          />
+        </AssetsListModal>
         <StatCard
           title='Departments'
           value='8'
@@ -236,26 +237,20 @@ function DashboardComponent() {
         />
         <StatCard
           title='Pending Requests'
-          value='23'
+          value='12'
           icon={<Clock className='h-4 w-4' />}
           description='Awaiting approval'
           trend='up'
           trendValue='+8.2%'
         />
         <StatCard
-          title='Issues'
-          value='5'
+          title='Issues Reported'
+          value='4'
           icon={<AlertCircle className='h-4 w-4' />}
-          description='Require attention'
+          description='In the last month'
           trend='down'
           trendValue='-2.3%'
         />
-      </div>
-
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-        {quickActions.map(action => (
-          <QuickActionCard key={action.title} {...action} />
-        ))}
       </div>
 
       <Card>
@@ -281,24 +276,22 @@ function DashboardComponent() {
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={getActionBadge(activity.action).variant as any}
+                      variant={getActionBadge(activity.action)}
+                      className='capitalize'
                     >
-                      {getActionBadge(activity.action).label}
+                      {activity.action}
                     </Badge>
                   </TableCell>
                   <TableCell>{activity.department}</TableCell>
                   <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${getStatusColor(
-                        activity.status
-                      )}`}
+                    <Badge
+                      variant={getStatusColor(activity.status)}
+                      className='capitalize'
                     >
                       {activity.status}
-                    </span>
+                    </Badge>
                   </TableCell>
-                  <TableCell>
-                    {new Date(activity.date).toLocaleDateString()}
-                  </TableCell>
+                  <TableCell>{activity.date}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
