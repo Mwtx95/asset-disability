@@ -19,7 +19,7 @@ import { Route as AppRegistrationImport } from './routes/_app/registration'
 import { Route as AppNotificationsImport } from './routes/_app/notifications'
 import { Route as AppDashboardImport } from './routes/_app/dashboard'
 import { Route as AppAssetsIndexImport } from './routes/_app/assets/index'
-import { Route as AppAssetsAssetNameImport } from './routes/_app/assets/$assetName'
+import { Route as AppAssetsAssetCategoryImport } from './routes/_app/assets/$assetCategory'
 
 // Create/Update Routes
 
@@ -70,9 +70,9 @@ const AppAssetsIndexRoute = AppAssetsIndexImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 
-const AppAssetsAssetNameRoute = AppAssetsAssetNameImport.update({
-  id: '/assets/$assetName',
-  path: '/assets/$assetName',
+const AppAssetsAssetCategoryRoute = AppAssetsAssetCategoryImport.update({
+  id: '/assets/$assetCategory',
+  path: '/assets/$assetCategory',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -129,11 +129,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginImport
       parentRoute: typeof rootRoute
     }
-    '/_app/assets/$assetName': {
-      id: '/_app/assets/$assetName'
-      path: '/assets/$assetName'
-      fullPath: '/assets/$assetName'
-      preLoaderRoute: typeof AppAssetsAssetNameImport
+    '/_app/assets/$assetCategory': {
+      id: '/_app/assets/$assetCategory'
+      path: '/assets/$assetCategory'
+      fullPath: '/assets/$assetCategory'
+      preLoaderRoute: typeof AppAssetsAssetCategoryImport
       parentRoute: typeof AppImport
     }
     '/_app/assets/': {
@@ -154,7 +154,7 @@ interface AppRouteChildren {
   AppRegistrationRoute: typeof AppRegistrationRoute
   AppReportsRoute: typeof AppReportsRoute
   AppSettingsRoute: typeof AppSettingsRoute
-  AppAssetsAssetNameRoute: typeof AppAssetsAssetNameRoute
+  AppAssetsAssetCategoryRoute: typeof AppAssetsAssetCategoryRoute
   AppAssetsIndexRoute: typeof AppAssetsIndexRoute
 }
 
@@ -164,7 +164,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppRegistrationRoute: AppRegistrationRoute,
   AppReportsRoute: AppReportsRoute,
   AppSettingsRoute: AppSettingsRoute,
-  AppAssetsAssetNameRoute: AppAssetsAssetNameRoute,
+  AppAssetsAssetCategoryRoute: AppAssetsAssetCategoryRoute,
   AppAssetsIndexRoute: AppAssetsIndexRoute,
 }
 
@@ -178,7 +178,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
   '/login': typeof AuthLoginRoute
-  '/assets/$assetName': typeof AppAssetsAssetNameRoute
+  '/assets/$assetCategory': typeof AppAssetsAssetCategoryRoute
   '/assets': typeof AppAssetsIndexRoute
 }
 
@@ -190,7 +190,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
   '/login': typeof AuthLoginRoute
-  '/assets/$assetName': typeof AppAssetsAssetNameRoute
+  '/assets/$assetCategory': typeof AppAssetsAssetCategoryRoute
   '/assets': typeof AppAssetsIndexRoute
 }
 
@@ -203,7 +203,7 @@ export interface FileRoutesById {
   '/_app/reports': typeof AppReportsRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_auth/login': typeof AuthLoginRoute
-  '/_app/assets/$assetName': typeof AppAssetsAssetNameRoute
+  '/_app/assets/$assetCategory': typeof AppAssetsAssetCategoryRoute
   '/_app/assets/': typeof AppAssetsIndexRoute
 }
 
@@ -217,7 +217,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/login'
-    | '/assets/$assetName'
+    | '/assets/$assetCategory'
     | '/assets'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -228,7 +228,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/login'
-    | '/assets/$assetName'
+    | '/assets/$assetCategory'
     | '/assets'
   id:
     | '__root__'
@@ -239,7 +239,7 @@ export interface FileRouteTypes {
     | '/_app/reports'
     | '/_app/settings'
     | '/_auth/login'
-    | '/_app/assets/$assetName'
+    | '/_app/assets/$assetCategory'
     | '/_app/assets/'
   fileRoutesById: FileRoutesById
 }
@@ -276,7 +276,7 @@ export const routeTree = rootRoute
         "/_app/registration",
         "/_app/reports",
         "/_app/settings",
-        "/_app/assets/$assetName",
+        "/_app/assets/$assetCategory",
         "/_app/assets/"
       ]
     },
@@ -303,8 +303,8 @@ export const routeTree = rootRoute
     "/_auth/login": {
       "filePath": "_auth/login.tsx"
     },
-    "/_app/assets/$assetName": {
-      "filePath": "_app/assets/$assetName.tsx",
+    "/_app/assets/$assetCategory": {
+      "filePath": "_app/assets/$assetCategory.tsx",
       "parent": "/_app"
     },
     "/_app/assets/": {

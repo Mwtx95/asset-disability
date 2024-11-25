@@ -1,26 +1,26 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog'
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
-} from '@/components/ui/form';
+} from '@/components/ui/form'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -28,97 +28,97 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { ASSET_STATUS_BADGE_MAP } from '@/lib/constants';
-import { assetsQueryOptions, useTransferAssetMutation } from '@/queries/assets';
-import { locationQueryOptions } from '@/queries/locations';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowLeft, ArrowRightLeft, Pencil, UserPlus } from 'lucide-react';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+} from '@/components/ui/table'
+import { ASSET_STATUS_BADGE_MAP } from '@/lib/constants'
+import { assetsQueryOptions, useTransferAssetMutation } from '@/queries/assets'
+import { locationQueryOptions } from '@/queries/locations'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { ArrowLeft, ArrowRightLeft, Pencil, UserPlus } from 'lucide-react'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 
 const transferFormSchema = z.object({
   locationId: z.coerce.number().min(1, 'Please select a location'),
-});
+})
 
-type TransferFormValues = z.infer<typeof transferFormSchema>;
+type TransferFormValues = z.infer<typeof transferFormSchema>
 
-export const Route = createFileRoute('/_app/assets/$assetName')({
+export const Route = createFileRoute('/_app/assets/$assetCategory')({
   loader: ({ context: { queryClient } }) => {
-    queryClient.ensureQueryData(assetsQueryOptions);
+    queryClient.ensureQueryData(assetsQueryOptions)
   },
   component: AssetDetailsRoute,
-});
+})
 
 function AssetDetailsRoute() {
-  const { assetName } = Route.useParams();
-  const { data: assets } = useSuspenseQuery(assetsQueryOptions);
-  const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
-  const transferAsset = useTransferAssetMutation();
-  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const { assetName } = Route.useParams()
+  const { data: assets } = useSuspenseQuery(assetsQueryOptions)
+  const { data: locations = [] } = useSuspenseQuery(locationQueryOptions)
+  const transferAsset = useTransferAssetMutation()
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false)
 
   const filteredAssetsByAssetName = assets?.filter(
-    asset => asset.name === assetName
-  );
+    (asset) => asset.name === assetName,
+  )
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
-  });
+  })
 
   async function onSubmit(values: TransferFormValues) {
     try {
       await transferAsset.mutateAsync({
         assetId: filteredAssetsByAssetName[0].id.toString(),
         locationId: values.locationId,
-      });
-      setIsTransferDialogOpen(false);
-      form.setValue('locationId', undefined as any);
+      })
+      setIsTransferDialogOpen(false)
+      form.setValue('locationId', undefined as any)
     } catch (error) {
-      console.error('Failed to transfer asset:', error);
+      console.error('Failed to transfer asset:', error)
     }
   }
 
   return (
-    <div className='container mx-auto py-6'>
-      <div className='mb-6'>
+    <div className="container mx-auto py-6">
+      <div className="mb-6">
         <Link
-          to='/assets'
-          className='inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4'
+          to="/assets"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4"
         >
-          <ArrowLeft className='h-4 w-4' />
+          <ArrowLeft className="h-4 w-4" />
           Back to Assets
         </Link>
         {filteredAssetsByAssetName?.[0] && (
-          <div className='space-y-1'>
-            <h2 className='text-2xl font-semibold tracking-tight'>
+          <div className="space-y-1">
+            <h2 className="text-2xl font-semibold tracking-tight">
               {filteredAssetsByAssetName[0].name}
             </h2>
-            <p className='text-sm text-muted-foreground'>
+            <p className="text-sm text-muted-foreground">
               Category: {filteredAssetsByAssetName[0].categoryName}
             </p>
           </div>
         )}
       </div>
-      <div className='relative w-full overflow-auto'>
+      <div className="relative w-full overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className='min-w-[120px]'>Location</TableHead>
-              <TableHead className='min-w-[150px]'>Assigned To</TableHead>
-              <TableHead className='min-w-[100px]'>Status</TableHead>
-              <TableHead className='text-center min-w-[160px]'>
+              <TableHead className="min-w-[120px]">Location</TableHead>
+              <TableHead className="min-w-[150px]">Assigned To</TableHead>
+              <TableHead className="min-w-[100px]">Status</TableHead>
+              <TableHead className="text-center min-w-[160px]">
                 Actions
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAssetsByAssetName?.map(asset => (
+            {filteredAssetsByAssetName?.map((asset) => (
               <TableRow key={asset.id}>
                 <TableCell>{asset.locationName}</TableCell>
-                <TableCell className='text-center'>
+                <TableCell className="text-center">
                   {asset.assignedTo}
                 </TableCell>
                 <TableCell>
@@ -133,13 +133,13 @@ function AssetDetailsRoute() {
                     {asset.status}
                   </span>
                 </TableCell>
-                <TableCell className='flex gap-2 justify-center'>
-                  <Button variant='secondary' size='sm'>
-                    <Pencil className='h-4 w-4' />
+                <TableCell className="flex gap-2 justify-center">
+                  <Button variant="secondary" size="sm">
+                    <Pencil className="h-4 w-4" />
                     Edit
                   </Button>
-                  <Button variant='outline' size='sm'>
-                    <UserPlus className='h-4 w-4' />
+                  <Button variant="outline" size="sm">
+                    <UserPlus className="h-4 w-4" />
                     Assign
                   </Button>
                   <Dialog
@@ -147,8 +147,8 @@ function AssetDetailsRoute() {
                     onOpenChange={setIsTransferDialogOpen}
                   >
                     <DialogTrigger asChild>
-                      <Button size='sm'>
-                        <ArrowRightLeft className='h-4 w-4' />
+                      <Button size="sm">
+                        <ArrowRightLeft className="h-4 w-4" />
                         Transfer
                       </Button>
                     </DialogTrigger>
@@ -159,7 +159,7 @@ function AssetDetailsRoute() {
                       <Form {...form}>
                         <form
                           onSubmit={form.handleSubmit(onSubmit)}
-                          className='space-y-4'
+                          className="space-y-4"
                         >
                           <FormItem>
                             <FormLabel>Current Location</FormLabel>
@@ -168,13 +168,13 @@ function AssetDetailsRoute() {
                                 value={asset.locationName}
                                 readOnly
                                 disabled
-                                className='bg-muted'
+                                className="bg-muted"
                               />
                             </FormControl>
                           </FormItem>
                           <FormField
                             control={form.control}
-                            name='locationId'
+                            name="locationId"
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>New Location</FormLabel>
@@ -184,16 +184,16 @@ function AssetDetailsRoute() {
                                 >
                                   <FormControl>
                                     <SelectTrigger>
-                                      <SelectValue placeholder='Select a location' />
+                                      <SelectValue placeholder="Select a location" />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
                                     {locations
                                       .filter(
-                                        location =>
-                                          location.name !== asset.locationName
+                                        (location) =>
+                                          location.name !== asset.locationName,
                                       )
-                                      .map(location => (
+                                      .map((location) => (
                                         <SelectItem
                                           key={location.id}
                                           value={location.id.toString()}
@@ -207,8 +207,8 @@ function AssetDetailsRoute() {
                             )}
                           />
                           <Button
-                            type='submit'
-                            className='w-full'
+                            type="submit"
+                            className="w-full"
                             disabled={transferAsset.isPending}
                           >
                             {transferAsset.isPending
@@ -226,5 +226,5 @@ function AssetDetailsRoute() {
         </Table>
       </div>
     </div>
-  );
+  )
 }
