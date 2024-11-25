@@ -12,13 +12,16 @@ export interface AssetItem {
     id: number;
     assetId: number;
     serialNumber: string;
+    purchaseDate: Date;
+    warrantyExpiryDate: Date;
+    notes?: string;
+    quantity: number;
+    price: number;
     status: status;
     locationId: number;
     vendorId: number;
-    purchaseDate: Date;
-    warrantyExpiryDate: Date;
-    price: number;
-    notes?: string;
+    assetName: string;
+    locationName: string;
 }
 
 export interface CreateAssetItemDTO {
@@ -39,6 +42,11 @@ async function getAssetItems() {
 
 async function getAssetItemsByAssetId(assetId: number) {
     const { data } = await axios.get<AssetItem[]>(`/asset-items/asset/${assetId}`);
+    return data;
+}
+
+async function getAssetItemsByCategoryId(categoryId: number) {
+    const { data } = await axios.get<AssetItem[]>(`/asset-items/category/${categoryId}`);
     return data;
 }
 
@@ -69,6 +77,12 @@ export const assetItemsByAssetIdQueryOptions = (assetId: number) =>
     queryOptions({
         queryKey: ['asset-items', 'asset', assetId],
         queryFn: () => getAssetItemsByAssetId(assetId),
+    });
+
+export const assetItemsByCategoryIdQueryOptions = (categoryId: number) =>
+    queryOptions({
+        queryKey: ['asset-items', 'category', categoryId],
+        queryFn: () => getAssetItemsByCategoryId(categoryId),
     });
 
 export function useCreateAssetItem() {

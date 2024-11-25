@@ -32,6 +32,10 @@ function AssetsRoute() {
   const [searchQuery, setSearchQuery] = useState('');
   const { data: assets } = useSuspenseQuery(categoriesStatsQueryOptions);
 
+  const filteredAssets = assets.filter(asset =>
+    asset.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
+  );
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(!!addAsset);
 
   const handleCloseModal = () => {
@@ -56,14 +60,14 @@ function AssetsRoute() {
         </Button>
       </div>
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-        {assets.map(asset => (
+        {filteredAssets.map(asset => (
           <Card
-            key={asset.name}
+            key={asset.id}
             className='hover:shadow-md transition-shadow cursor-pointer'
             onClick={() =>
               navigate({
                 to: '/assets/$assetCategory',
-                params: { assetCategory: asset.name },
+                params: { assetCategory: `${asset.id}_${asset.name}` },
               })
             }
           >
@@ -72,7 +76,7 @@ function AssetsRoute() {
                 <h3 className='font-semibold text-lg mb-4'>{asset.name}</h3>
               </div>
               <p className='text-sm text-muted-foreground'>
-                assets
+                {asset.totalAssets} assets
               </p>
             </CardHeader>
             <CardContent>

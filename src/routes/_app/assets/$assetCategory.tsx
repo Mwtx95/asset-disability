@@ -1,5 +1,5 @@
+import { AddAssetItemForm } from '@/components/assets/add-asset-item-form'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import {
   FormItem,
   FormLabel,
 } from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -31,6 +32,7 @@ import {
 } from '@/components/ui/table'
 import { ASSET_STATUS_BADGE_MAP } from '@/lib/constants'
 import { assetsQueryOptions, useTransferAssetMutation } from '@/queries/assets'
+import { assetItemsByCategoryIdQueryOptions, assetItemsQueryOptions } from '@/queries/assetsItems'
 import { locationQueryOptions } from '@/queries/locations'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useSuspenseQuery } from '@tanstack/react-query'
@@ -39,7 +41,6 @@ import { ArrowLeft, ArrowRightLeft, Pencil, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { AddAssetItemForm } from '@/components/assets/add-asset-item-form'
 
 const transferFormSchema = z.object({
   locationId: z.coerce.number().min(1, 'Please select a location'),
@@ -48,23 +49,23 @@ const transferFormSchema = z.object({
 type TransferFormValues = z.infer<typeof transferFormSchema>
 
 export const Route = createFileRoute('/_app/assets/$assetCategory')({
-  loader: ({ context: { queryClient } }) => {
-    queryClient.ensureQueryData(assetsQueryOptions)
+  loader: ({ context: { queryClient }, params: { assetCategory } }) => {
+    const [categoryId] = assetCategory.split('_')
+    queryClient.ensureQueryData(assetItemsByCategoryIdQueryOptions(parseInt(categoryId)))
   },
   component: AssetDetailsRoute,
 })
 
 function AssetDetailsRoute() {
   const { assetCategory } = Route.useParams()
-  const { data: assets } = useSuspenseQuery(assetsQueryOptions)
+  const [categoryId, categoryName] = assetCategory.split('_')
+  const { data: categoryAssets } = useSuspenseQuery(
+    assetItemsByCategoryIdQueryOptions(parseInt(categoryId))
+  )
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions)
   const transferAsset = useTransferAssetMutation()
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false)
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false)
-
-  const filteredAssetsByAssetName = assets?.filter(
-    (asset) => asset.name === assetCategory,
-  )
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
@@ -73,7 +74,7 @@ function AssetDetailsRoute() {
   async function onSubmit(values: TransferFormValues) {
     try {
       await transferAsset.mutateAsync({
-        assetId: filteredAssetsByAssetName[0].id.toString(),
+        assetId: categoryAssets[0].id.toString(),
         locationId: values.locationId,
       })
       setIsTransferDialogOpen(false)
@@ -93,37 +94,36 @@ function AssetDetailsRoute() {
           <ArrowLeft className="h-4 w-4" />
           Back to Assets
         </Link>
-        {filteredAssetsByAssetName?.[0] && (
-          <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-semibold tracking-tight">
-                {filteredAssetsByAssetName[0].name}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Category: {filteredAssetsByAssetName[0].categoryName}
-              </p>
-            </div>
-            <Dialog open={isReceiveDialogOpen} onOpenChange={setIsReceiveDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>Receive Asset</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Receive Asset</DialogTitle>
-                </DialogHeader>
-                <AddAssetItemForm
-                  onSuccess={() => setIsReceiveDialogOpen(false)}
-                  assetId={filteredAssetsByAssetName[0].id}
-                />
-              </DialogContent>
-            </Dialog>
+
+        <div className="flex justify-between items-start">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              {categoryName}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Category ID: {categoryId}
+            </p>
           </div>
-        )}
+          <Dialog open={isReceiveDialogOpen} onOpenChange={setIsReceiveDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>Receive Asset</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Receive Asset</DialogTitle>
+              </DialogHeader>
+              <AddAssetItemForm
+                onSuccess={() => setIsReceiveDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       <div className="relative w-full overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="min-w-[200px]">Asset Name</TableHead>
               <TableHead className="min-w-[120px]">Location</TableHead>
               <TableHead className="min-w-[150px]">Assigned To</TableHead>
               <TableHead className="min-w-[100px]">Status</TableHead>
@@ -133,11 +133,12 @@ function AssetDetailsRoute() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAssetsByAssetName?.map((asset) => (
+            {categoryAssets?.map((asset) => (
               <TableRow key={asset.id}>
+                <TableCell>{asset.assetName}</TableCell>
                 <TableCell>{asset.locationName}</TableCell>
                 <TableCell className="text-center">
-                  {asset.assignedTo}
+                  {/* {asset.} */}
                 </TableCell>
                 <TableCell>
                   <span
