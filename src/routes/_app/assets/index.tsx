@@ -167,8 +167,8 @@ function AssetsRoute() {
             className='hover:shadow-md transition-shadow cursor-pointer'
             onClick={() =>
               navigate({
-                to: '/assets/$assetName',
-                params: { assetName: asset.name },
+                to: '/assets/$assetCategory',
+                params: { assetCategory: asset.name },
               })
             }
           >

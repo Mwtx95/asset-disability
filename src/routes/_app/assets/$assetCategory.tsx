@@ -39,6 +39,7 @@ import { ArrowLeft, ArrowRightLeft, Pencil, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { AddAssetItemForm } from '@/components/assets/add-asset-item-form'
 
 const transferFormSchema = z.object({
   locationId: z.coerce.number().min(1, 'Please select a location'),
@@ -54,14 +55,15 @@ export const Route = createFileRoute('/_app/assets/$assetCategory')({
 })
 
 function AssetDetailsRoute() {
-  const { assetName } = Route.useParams()
+  const { assetCategory } = Route.useParams()
   const { data: assets } = useSuspenseQuery(assetsQueryOptions)
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions)
   const transferAsset = useTransferAssetMutation()
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false)
+  const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false)
 
   const filteredAssetsByAssetName = assets?.filter(
-    (asset) => asset.name === assetName,
+    (asset) => asset.name === assetCategory,
   )
 
   const form = useForm<TransferFormValues>({
@@ -92,13 +94,29 @@ function AssetDetailsRoute() {
           Back to Assets
         </Link>
         {filteredAssetsByAssetName?.[0] && (
-          <div className="space-y-1">
-            <h2 className="text-2xl font-semibold tracking-tight">
-              {filteredAssetsByAssetName[0].name}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Category: {filteredAssetsByAssetName[0].categoryName}
-            </p>
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-semibold tracking-tight">
+                {filteredAssetsByAssetName[0].name}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Category: {filteredAssetsByAssetName[0].categoryName}
+              </p>
+            </div>
+            <Dialog open={isReceiveDialogOpen} onOpenChange={setIsReceiveDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>Receive Asset</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Receive Asset</DialogTitle>
+                </DialogHeader>
+                <AddAssetItemForm
+                  onSuccess={() => setIsReceiveDialogOpen(false)}
+                  assetId={filteredAssetsByAssetName[0].id}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
         )}
       </div>
@@ -123,12 +141,11 @@ function AssetDetailsRoute() {
                 </TableCell>
                 <TableCell>
                   <span
-                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                      ASSET_STATUS_BADGE_MAP[
-                        asset.status as keyof typeof ASSET_STATUS_BADGE_MAP
-                      ]?.color ||
+                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${ASSET_STATUS_BADGE_MAP[
+                      asset.status as keyof typeof ASSET_STATUS_BADGE_MAP
+                    ]?.color ||
                       'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-                    }`}
+                      }`}
                   >
                     {asset.status}
                   </span>

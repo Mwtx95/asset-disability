@@ -35,12 +35,12 @@ const formSchema = z.object({
 
 type FormSchema = z.infer<typeof formSchema>;
 
-interface AddAssetCategoryFormProps {
+interface AddAssetItemFormProps {
   onSuccess: () => void;
   assetId: number;
 }
 
-export function AddAssetCategoryForm({ onSuccess, assetId }: AddAssetCategoryFormProps) {
+export function AddAssetItemForm({ onSuccess, assetId }: AddAssetItemFormProps) {
   const queryClient = useQueryClient();
   const { data: vendors } = useSuspenseQuery(vendorsQueryOptions);
   const { data: locations } = useSuspenseQuery(locationQueryOptions);
@@ -55,11 +55,11 @@ export function AddAssetCategoryForm({ onSuccess, assetId }: AddAssetCategoryFor
         ...values,
         assetId,
       };
-      const response = await axios.post('/asset-categories', data);
+      const response = await axios.post('/asset-items', data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['asset-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['asset-items'] });
       toast.success('Asset received successfully');
       form.reset();
       onSuccess();
