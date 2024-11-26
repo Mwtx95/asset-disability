@@ -1,3 +1,4 @@
+import React, { useState } from 'react'
 import { AddAssetItemForm } from '@/components/assets/add-asset-item-form'
 import { Button } from '@/components/ui/button'
 import {
@@ -38,7 +39,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, ArrowRightLeft, Pencil, UserPlus } from 'lucide-react'
-import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -64,6 +64,7 @@ function AssetDetailsRoute() {
   )
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions)
   const transferAsset = useTransferAssetMutation()
+  const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null)
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false)
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false)
 
@@ -71,10 +72,28 @@ function AssetDetailsRoute() {
     resolver: zodResolver(transferFormSchema),
   })
 
+  // Group assets by assetId
+  const groupedAssets = categoryAssets.reduce((acc, asset) => {
+    if (!acc[asset.assetId]) {
+      acc[asset.assetId] = {
+        id: asset.assetId,
+        name: asset.assetName,
+        quantity: 0,
+        status: asset.status,
+        items: []
+      }
+    }
+    acc[asset.assetId].quantity++
+    acc[asset.assetId].items.push(asset)
+    return acc
+  }, {} as Record<number, { id: number; name: string; quantity: number; status: string; items: typeof categoryAssets }>)
+
+  const assets = Object.values(groupedAssets)
+
   async function onSubmit(values: TransferFormValues) {
     try {
       await transferAsset.mutateAsync({
-        assetId: categoryAssets[0].id.toString(),
+        assetId: selectedAssetId!.toString(),
         locationId: values.locationId,
       })
       setIsTransferDialogOpen(false)
@@ -122,121 +141,149 @@ function AssetDetailsRoute() {
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-[200px]">Asset Name</TableHead>
-              <TableHead className="min-w-[120px]">Location</TableHead>
-              <TableHead className="min-w-[150px]">Assigned To</TableHead>
+              <TableHead className="min-w-[100px]">Total Quantity</TableHead>
               <TableHead className="min-w-[100px]">Status</TableHead>
-              <TableHead className="text-center min-w-[160px]">
-                Actions
-              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {categoryAssets?.map((asset) => (
-              <TableRow key={asset.id}>
-                <TableCell>{asset.assetName}</TableCell>
-                <TableCell>{asset.locationName}</TableCell>
-                <TableCell className="text-center">
-                  {/* {asset.} */}
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${ASSET_STATUS_BADGE_MAP[
-                      asset.status as keyof typeof ASSET_STATUS_BADGE_MAP
-                    ]?.color ||
-                      'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-                      }`}
-                  >
-                    {asset.status}
-                  </span>
-                </TableCell>
-                <TableCell className="flex gap-2 justify-center">
-                  <Button variant="secondary" size="sm">
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <UserPlus className="h-4 w-4" />
-                    Assign
-                  </Button>
-                  <Dialog
-                    open={isTransferDialogOpen}
-                    onOpenChange={setIsTransferDialogOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button size="sm">
-                        <ArrowRightLeft className="h-4 w-4" />
-                        Transfer
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Transfer Asset</DialogTitle>
-                      </DialogHeader>
-                      <Form {...form}>
-                        <form
-                          onSubmit={form.handleSubmit(onSubmit)}
-                          className="space-y-4"
-                        >
-                          <FormItem>
-                            <FormLabel>Current Location</FormLabel>
-                            <FormControl>
-                              <Input
-                                value={asset.locationName}
-                                readOnly
-                                disabled
-                                className="bg-muted"
-                              />
-                            </FormControl>
-                          </FormItem>
-                          <FormField
-                            control={form.control}
-                            name="locationId"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>New Location</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value?.toString()}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select a location" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {locations
-                                      .filter(
-                                        (location) =>
-                                          location.name !== asset.locationName,
-                                      )
-                                      .map((location) => (
-                                        <SelectItem
-                                          key={location.id}
-                                          value={location.id.toString()}
+            {assets.map((asset) => (
+              <React.Fragment key={asset.id}>
+                <TableRow 
+                  className="cursor-pointer hover:bg-muted/50" 
+                  onClick={() => setSelectedAssetId(selectedAssetId === asset.id ? null : asset.id)}
+                >
+                  <TableCell>{asset.name}</TableCell>
+                  <TableCell>{asset.quantity}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${ASSET_STATUS_BADGE_MAP[
+                        asset.status as keyof typeof ASSET_STATUS_BADGE_MAP
+                      ]?.color ||
+                        'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
+                        }`}
+                    >
+                      {asset.status}
+                    </span>
+                  </TableCell>
+                </TableRow>
+                {selectedAssetId === asset.id && (
+                  <TableRow>
+                    <TableCell colSpan={3}>
+                      <div className="p-4 bg-muted/50 rounded-lg">
+                        <h3 className="font-medium mb-2">Individual Items</h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Serial Number</TableHead>
+                              <TableHead>Location</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="text-center">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {asset.items.map((item) => (
+                              <TableRow key={item.id}>
+                                <TableCell>{item.serialNumber}</TableCell>
+                                <TableCell>{item.locationName}</TableCell>
+                                <TableCell>
+                                  <span
+                                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${ASSET_STATUS_BADGE_MAP[
+                                      item.status as keyof typeof ASSET_STATUS_BADGE_MAP
+                                    ]?.color ||
+                                      'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
+                                      }`}
+                                  >
+                                    {item.status}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="flex gap-2 justify-center">
+                                  <Button variant="outline" size="sm">
+                                    <UserPlus className="h-4 w-4" />
+                                    Assign
+                                  </Button>
+                                  <Dialog
+                                    open={isTransferDialogOpen && selectedAssetId === asset.id}
+                                    onOpenChange={setIsTransferDialogOpen}
+                                  >
+                                    <DialogTrigger asChild>
+                                      <Button size="sm">
+                                        <ArrowRightLeft className="h-4 w-4" />
+                                        Transfer
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>Transfer Asset</DialogTitle>
+                                      </DialogHeader>
+                                      <Form {...form}>
+                                        <form
+                                          onSubmit={form.handleSubmit(onSubmit)}
+                                          className="space-y-4"
                                         >
-                                          {location.name}
-                                        </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
-                              </FormItem>
-                            )}
-                          />
-                          <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={transferAsset.isPending}
-                          >
-                            {transferAsset.isPending
-                              ? 'Transferring...'
-                              : 'Transfer Asset'}
-                          </Button>
-                        </form>
-                      </Form>
-                    </DialogContent>
-                  </Dialog>
-                </TableCell>
-              </TableRow>
+                                          <FormItem>
+                                            <FormLabel>Current Location</FormLabel>
+                                            <FormControl>
+                                              <Input
+                                                value={item.locationName}
+                                                readOnly
+                                                disabled
+                                                className="bg-muted"
+                                              />
+                                            </FormControl>
+                                          </FormItem>
+                                          <FormField
+                                            control={form.control}
+                                            name="locationId"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>New Location</FormLabel>
+                                                <Select
+                                                  onValueChange={field.onChange}
+                                                  defaultValue={field.value?.toString()}
+                                                >
+                                                  <FormControl>
+                                                    <SelectTrigger>
+                                                      <SelectValue placeholder="Select a location" />
+                                                    </SelectTrigger>
+                                                  </FormControl>
+                                                  <SelectContent>
+                                                    {locations.map((location) => (
+                                                      <SelectItem
+                                                        key={location.id}
+                                                        value={location.id.toString()}
+                                                      >
+                                                        {location.name}
+                                                      </SelectItem>
+                                                    ))}
+                                                  </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <Button
+                                            type="submit"
+                                            className="w-full"
+                                            disabled={transferAsset.isPending}
+                                          >
+                                            {transferAsset.isPending
+                                              ? 'Transferring...'
+                                              : 'Transfer'}
+                                          </Button>
+                                        </form>
+                                      </Form>
+                                    </DialogContent>
+                                  </Dialog>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </React.Fragment>
             ))}
           </TableBody>
         </Table>
