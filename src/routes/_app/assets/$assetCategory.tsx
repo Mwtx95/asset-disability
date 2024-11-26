@@ -111,6 +111,7 @@ function AssetDetailsRoute() {
               </DialogHeader>
               <AddAssetItemForm
                 onSuccess={() => setIsReceiveDialogOpen(false)}
+                categoryId={parseInt(categoryId)}
               />
             </DialogContent>
           </Dialog>
