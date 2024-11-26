@@ -37,14 +37,13 @@ type FormSchema = z.infer<typeof formSchema>;
 
 interface AddAssetItemFormProps {
   onSuccess: () => void;
-  assetId: number;
 }
 
-export function AddAssetItemForm({ onSuccess, assetId }: AddAssetItemFormProps) {
+export function AddAssetItemForm({ onSuccess }: AddAssetItemFormProps) {
   const queryClient = useQueryClient();
   const { data: vendors } = useSuspenseQuery(vendorsQueryOptions);
   const { data: locations } = useSuspenseQuery(locationQueryOptions);
-  
+
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
   });
@@ -53,7 +52,7 @@ export function AddAssetItemForm({ onSuccess, assetId }: AddAssetItemFormProps) 
     mutationFn: async (values: FormSchema) => {
       const data = {
         ...values,
-        assetId,
+        // assetId,
       };
       const response = await axios.post('/asset-items', data);
       return response.data;

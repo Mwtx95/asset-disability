@@ -12,6 +12,18 @@ export interface Category {
   isBlocked: boolean;
 }
 
+interface CategoryStats {
+  id: number;
+  name: string;
+  totalAssets: number;
+  description: string;
+  isBlocked: boolean;
+  availableCount: number;
+  maintenanceCount: number;
+  brokenCount: number;
+  assignedCount: number;
+}
+
 export interface CreateCategoryDTO {
   name: string;
   description?: string;
@@ -19,6 +31,11 @@ export interface CreateCategoryDTO {
 
 async function fetchCategories() {
   const { data } = await axios.get<Category[]>('/categories');
+  return data;
+}
+
+async function fetchCategoriesStats() {
+  const { data } = await axios.get<CategoryStats[]>('/categories/stats');
   return data;
 }
 
@@ -43,6 +60,11 @@ async function blockCategory(id: number) {
 export const categoriesQueryOptions = queryOptions({
   queryKey: ['categories'],
   queryFn: fetchCategories,
+});
+
+export const categoriesStatsQueryOptions = queryOptions({
+  queryKey: ['categories-stats'],
+  queryFn: fetchCategoriesStats,
 });
 
 export function useCreateCategory() {
