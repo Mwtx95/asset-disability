@@ -1,28 +1,29 @@
-import React, { useState } from 'react'
-import { AddAssetItemForm } from '@/components/assets/add-asset-item-form'
-import { Button } from '@/components/ui/button'
+import React, { useState } from "react";
+import { AddAssetItemForm } from "@/components/assets/add-asset-item-form";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -30,76 +31,92 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { ASSET_STATUS_BADGE_MAP } from '@/lib/constants'
-import { assetsQueryOptions, useTransferAssetMutation } from '@/queries/assets'
-import { assetItemsByCategoryIdQueryOptions, assetItemsQueryOptions } from '@/queries/assetsItems'
-import { locationQueryOptions } from '@/queries/locations'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, ArrowRightLeft, Pencil, UserPlus } from 'lucide-react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
+} from "@/components/ui/table";
+import { ASSET_STATUS_BADGE_MAP } from "@/lib/constants";
+import { assetsQueryOptions, useTransferAssetMutation } from "@/queries/assets";
+import {
+  assetItemsByCategoryIdQueryOptions,
+  assetItemsQueryOptions,
+} from "@/queries/assetsItems";
+import { locationQueryOptions } from "@/queries/locations";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRightLeft, Pencil, UserPlus } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const transferFormSchema = z.object({
-  locationId: z.coerce.number().min(1, 'Please select a location'),
-})
+  locationId: z.coerce.number().min(1, "Please select a location"),
+});
 
-type TransferFormValues = z.infer<typeof transferFormSchema>
+type TransferFormValues = z.infer<typeof transferFormSchema>;
 
-export const Route = createFileRoute('/_app/assets/$assetCategory')({
+export const Route = createFileRoute("/_app/assets/$assetCategory")({
   loader: ({ context: { queryClient }, params: { assetCategory } }) => {
-    const [categoryId] = assetCategory.split('_')
-    queryClient.ensureQueryData(assetItemsByCategoryIdQueryOptions(parseInt(categoryId)))
+    const [categoryId] = assetCategory.split("_");
+    queryClient.ensureQueryData(
+      assetItemsByCategoryIdQueryOptions(parseInt(categoryId))
+    );
   },
   component: AssetDetailsRoute,
-})
+});
 
 function AssetDetailsRoute() {
-  const { assetCategory } = Route.useParams()
-  const [categoryId, categoryName] = assetCategory.split('_')
+  const { assetCategory } = Route.useParams();
+  const [categoryId, categoryName] = assetCategory.split("_");
   const { data: categoryAssets } = useSuspenseQuery(
     assetItemsByCategoryIdQueryOptions(parseInt(categoryId))
-  )
-  const { data: locations = [] } = useSuspenseQuery(locationQueryOptions)
-  const transferAsset = useTransferAssetMutation()
-  const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null)
-  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false)
-  const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false)
+  );
+  const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
+  const transferAsset = useTransferAssetMutation();
+  const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null);
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
-  })
+  });
 
   // Group assets by assetId
-  const groupedAssets = categoryAssets.reduce((acc, asset) => {
-    if (!acc[asset.assetId]) {
-      acc[asset.assetId] = {
-        id: asset.assetId,
-        name: asset.assetName,
-        quantity: 0,
-        status: asset.status,
-        items: []
+  const groupedAssets = categoryAssets.reduce(
+    (acc, asset) => {
+      if (!acc[asset.assetId]) {
+        acc[asset.assetId] = {
+          id: asset.assetId,
+          name: asset.asset_name,
+          quantity: 0,
+          status: asset.status,
+          items: [],
+        };
       }
-    }
-    acc[asset.assetId].quantity++
-    acc[asset.assetId].items.push(asset)
-    return acc
-  }, {} as Record<number, { id: number; name: string; quantity: number; status: string; items: typeof categoryAssets }>)
+      acc[asset.assetId].quantity++;
+      acc[asset.assetId].items.push(asset);
+      return acc;
+    },
+    {} as Record<
+      number,
+      {
+        id: number;
+        name: string;
+        quantity: number;
+        status: string;
+        items: typeof categoryAssets;
+      }
+    >
+  );
 
-  const assets = Object.values(groupedAssets)
-
+  const assets = Object.values(groupedAssets);
   async function onSubmit(values: TransferFormValues) {
     try {
       await transferAsset.mutateAsync({
         assetId: selectedAssetId!.toString(),
         locationId: values.locationId,
-      })
-      setIsTransferDialogOpen(false)
-      form.setValue('locationId', undefined as any)
+      });
+      setIsTransferDialogOpen(false);
+      form.setValue("locationId", undefined as any);
     } catch (error) {
-      console.error('Failed to transfer asset:', error)
+      console.error("Failed to transfer asset:", error);
     }
   }
 
@@ -120,7 +137,10 @@ function AssetDetailsRoute() {
               {categoryName}
             </h2>
           </div>
-          <Dialog open={isReceiveDialogOpen} onOpenChange={setIsReceiveDialogOpen}>
+          <Dialog
+            open={isReceiveDialogOpen}
+            onOpenChange={setIsReceiveDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button>Receive Asset</Button>
             </DialogTrigger>
@@ -147,20 +167,25 @@ function AssetDetailsRoute() {
           </TableHeader>
           <TableBody>
             {assets.map((asset) => (
-              <React.Fragment key={asset.id}>
-                <TableRow 
-                  className="cursor-pointer hover:bg-muted/50" 
-                  onClick={() => setSelectedAssetId(selectedAssetId === asset.id ? null : asset.id)}
+              <React.Fragment key={asset.id + Math.random()}>
+                <TableRow
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() =>
+                    setSelectedAssetId(
+                      selectedAssetId === asset.id ? null : asset.id
+                    )
+                  }
                 >
                   <TableCell>{asset.name}</TableCell>
                   <TableCell>{asset.quantity}</TableCell>
                   <TableCell>
                     <span
-                      className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${ASSET_STATUS_BADGE_MAP[
-                        asset.status as keyof typeof ASSET_STATUS_BADGE_MAP
-                      ]?.color ||
-                        'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-                        }`}
+                      className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                        ASSET_STATUS_BADGE_MAP[
+                          asset.status as keyof typeof ASSET_STATUS_BADGE_MAP
+                        ]?.color ||
+                        "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                      }`}
                     >
                       {asset.status}
                     </span>
@@ -177,21 +202,24 @@ function AssetDetailsRoute() {
                               <TableHead>Serial Number</TableHead>
                               <TableHead>Location</TableHead>
                               <TableHead>Status</TableHead>
-                              <TableHead className="text-center">Actions</TableHead>
+                              <TableHead className="text-center">
+                                Actions
+                              </TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {asset.items.map((item) => (
-                              <TableRow key={item.id}>
-                                <TableCell>{item.serialNumber}</TableCell>
-                                <TableCell>{item.locationName}</TableCell>
+                              <TableRow key={item.id + Math.random()}>
+                                <TableCell>{item.serial_number}</TableCell>
+                                <TableCell>{item.location_name}</TableCell>
                                 <TableCell>
                                   <span
-                                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${ASSET_STATUS_BADGE_MAP[
-                                      item.status as keyof typeof ASSET_STATUS_BADGE_MAP
-                                    ]?.color ||
-                                      'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-                                      }`}
+                                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                                      ASSET_STATUS_BADGE_MAP[
+                                        item.status as keyof typeof ASSET_STATUS_BADGE_MAP
+                                      ]?.color ||
+                                      "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                                    }`}
                                   >
                                     {item.status}
                                   </span>
@@ -202,7 +230,10 @@ function AssetDetailsRoute() {
                                     Assign
                                   </Button>
                                   <Dialog
-                                    open={isTransferDialogOpen && selectedAssetId === asset.id}
+                                    open={
+                                      isTransferDialogOpen &&
+                                      selectedAssetId === asset.id
+                                    }
                                     onOpenChange={setIsTransferDialogOpen}
                                   >
                                     <DialogTrigger asChild>
@@ -213,7 +244,9 @@ function AssetDetailsRoute() {
                                     </DialogTrigger>
                                     <DialogContent>
                                       <DialogHeader>
-                                        <DialogTitle>Transfer Asset</DialogTitle>
+                                        <DialogTitle>
+                                          Transfer Asset
+                                        </DialogTitle>
                                       </DialogHeader>
                                       <Form {...form}>
                                         <form
@@ -221,10 +254,12 @@ function AssetDetailsRoute() {
                                           className="space-y-4"
                                         >
                                           <FormItem>
-                                            <FormLabel>Current Location</FormLabel>
+                                            <FormLabel>
+                                              Current Location
+                                            </FormLabel>
                                             <FormControl>
                                               <Input
-                                                value={item.locationName}
+                                                value={item.location_name}
                                                 readOnly
                                                 disabled
                                                 className="bg-muted"
@@ -236,7 +271,9 @@ function AssetDetailsRoute() {
                                             name="locationId"
                                             render={({ field }) => (
                                               <FormItem>
-                                                <FormLabel>New Location</FormLabel>
+                                                <FormLabel>
+                                                  New Location
+                                                </FormLabel>
                                                 <Select
                                                   onValueChange={field.onChange}
                                                   defaultValue={field.value?.toString()}
@@ -247,14 +284,16 @@ function AssetDetailsRoute() {
                                                     </SelectTrigger>
                                                   </FormControl>
                                                   <SelectContent>
-                                                    {locations.map((location) => (
-                                                      <SelectItem
-                                                        key={location.id}
-                                                        value={location.id.toString()}
-                                                      >
-                                                        {location.name}
-                                                      </SelectItem>
-                                                    ))}
+                                                    {locations.map(
+                                                      (location) => (
+                                                        <SelectItem
+                                                          key={location.id}
+                                                          value={location.id.toString()}
+                                                        >
+                                                          {location.name}
+                                                        </SelectItem>
+                                                      )
+                                                    )}
                                                   </SelectContent>
                                                 </Select>
                                                 <FormMessage />
@@ -267,8 +306,8 @@ function AssetDetailsRoute() {
                                             disabled={transferAsset.isPending}
                                           >
                                             {transferAsset.isPending
-                                              ? 'Transferring...'
-                                              : 'Transfer'}
+                                              ? "Transferring..."
+                                              : "Transfer"}
                                           </Button>
                                         </form>
                                       </Form>
@@ -289,5 +328,5 @@ function AssetDetailsRoute() {
         </Table>
       </div>
     </div>
-  )
+  );
 }

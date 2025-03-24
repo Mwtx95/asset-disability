@@ -10,8 +10,9 @@ type status = 'AVAILABLE' | 'MAINTENANCE' | 'BROKEN' | 'ASSIGNED';
 
 export interface AssetItem {
     id: number;
+    asset_name: string;
     assetId: number;
-    serialNumber: string;
+    serial_number: string;
     purchaseDate: Date;
     warrantyExpiryDate: Date;
     notes?: string;
@@ -20,13 +21,13 @@ export interface AssetItem {
     status: status;
     locationId: number;
     vendorId: number;
-    assetName: string;
-    locationName: string;
+    asset: string;
+    location_name: string;
 }
 
 export interface CreateAssetItemDTO {
     assetId: number;
-    serialNumber: string;
+    serial_number: string;
     locationId: number;
     vendorId: number;
     purchaseDate: Date;
@@ -41,12 +42,12 @@ async function getAssetItems() {
 }
 
 async function getAssetItemsByAssetId(assetId: number) {
-    const { data } = await axios.get<AssetItem[]>(`/asset-items/asset/${assetId}`);
+    const { data } = await axios.get<AssetItem[]>(`/assetitems/asset/${assetId}/`);
     return data;
 }
 
 async function getAssetItemsByCategoryId(categoryId: number) {
-    const { data } = await axios.get<AssetItem[]>(`/asset-items/category/${categoryId}`);
+    const { data } = await axios.get<AssetItem[]>(`/assetitems/category/${categoryId}/`);
     return data;
 }
 

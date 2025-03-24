@@ -30,12 +30,12 @@ export interface CreateCategoryDTO {
 }
 
 async function fetchCategories() {
-  const { data } = await axios.get<Category[]>('/categories');
+  const { data } = await axios.get<Category[]>('/categories/');
   return data;
 }
 
 async function fetchCategoriesStats() {
-  const { data } = await axios.get<CategoryStats[]>('/categories/stats');
+  const { data } = await axios.get<CategoryStats[]>('/categories/stats/');
   return data;
 }
 

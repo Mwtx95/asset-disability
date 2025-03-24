@@ -15,10 +15,10 @@ export interface Asset {
   categoryName: string;
   assignedTo: string;
   status: string;
-  locationName: string;
+  location: string;
   createdAt: string;
   updatedAt: null;
-  serialNumber?: string;
+  serial_number?: string;
   purchaseDate?: string;
   purchasePrice?: number;
   currentLocation?: string;
@@ -30,22 +30,25 @@ export interface Asset {
 export const assetsQueryOptions = queryOptions({
   queryKey: ['assets'],
   queryFn: fetchAssets,
-});
+}); 
 
 export const assetQueryOptions = (assetId: string) =>
   queryOptions({
     queryKey: ['assets', assetId],
     queryFn: fetchAsset,
+
   });
 
 async function fetchAssets() {
-  const { data } = await axios.get<Asset[]>('/assets');
+  const { data } = await axios.get<Asset[]>('/assets/');
+  console.log('API Response for assets:', data);
   return data;
 }
 
 async function fetchAsset({ queryKey }: QueryFunctionContext) {
   const [_, assetId] = queryKey;
   const { data } = await axios.get<Asset>(`/assets/${assetId}`);
+  console.log('API Response for single asset:', data);
   return data;
 }
 

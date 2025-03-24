@@ -10,7 +10,7 @@ export const ASSET_STATUSES = {
   ALL: 'All Statuses',
   AVAILABLE: 'Available',
   MAINTENANCE: 'Maintenance',
-  RENTED: 'Rented',
+  BROKEN: 'Broken',
   NOT_AVAILABLE: 'Not Available',
 } as const;
 
@@ -24,8 +24,8 @@ export const ASSET_STATUS_BADGE_MAP = {
     color:
       'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
   },
-  [ASSET_STATUSES.RENTED]: {
-    label: ASSET_STATUSES.RENTED,
+  [ASSET_STATUSES.BROKEN]: {
+    label: ASSET_STATUSES.BROKEN,
     color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
   },
   [ASSET_STATUSES.NOT_AVAILABLE]: {

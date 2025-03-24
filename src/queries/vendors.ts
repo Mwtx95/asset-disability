@@ -26,12 +26,12 @@ export interface CreateVendorDTO {
 }
 
 async function getVendors() {
-    const { data } = await axios.get<Vendor[]>('/vendors');
+    const { data } = await axios.get<Vendor[]>('/vendors/');
     return data;
 }
 
 async function createVendor(vendor: CreateVendorDTO) {
-    const { data } = await axios.post<Vendor>('/vendors', vendor);
+    const { data } = await axios.post<Vendor>('/vendors/', vendor);
     return data;
 }
 

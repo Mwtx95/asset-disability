@@ -24,7 +24,7 @@ interface CreateLocationDTO {
 export const locationQueryOptions = queryOptions({
   queryKey: ['locations'],
   queryFn: async () => {
-    const { data } = await axios.get<Location[]>('/locations');
+    const { data } = await axios.get<Location[]>('/locations/');
     return data;
   },
 });
@@ -41,7 +41,7 @@ export function useCreateLocation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (location: CreateLocationDTO) => {
-      const { data } = await axios.post<Location>('/locations', location);
+      const { data } = await axios.post<Location>('/locations/', location);
       return data;
     },
     onSuccess: () => {

@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -6,26 +6,30 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { categoriesQueryOptions } from '@/queries/categories';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
+} from "@/components/ui/select";
+import { categoriesQueryOptions } from "@/queries/categories";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import axios from "axios";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
 const formSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  categoryId: z.coerce.number().min(1, 'Please select a category'),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  categoryId: z.coerce.number().min(1, "Please select a category"),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -43,17 +47,17 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
 
   const mutation = useMutation({
     mutationFn: async (values: FormSchema) => {
-      const { data } = await axios.post('/assets', values);
+      const { data } = await axios.post("/assets/", values);
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
-      toast.success('Asset created successfully');
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      toast.success("Asset created successfully");
       form.reset();
       onSuccess();
     },
-    onError: error => {
-      toast.error('Failed to create asset');
+    onError: (error) => {
+      toast.error("Failed to create asset");
       console.error(error);
     },
   });
@@ -64,15 +68,15 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name='name'
+          name="name"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Asset Name</FormLabel>
               <FormControl>
-                <Input placeholder='Enter asset name' {...field} />
+                <Input placeholder="Enter asset name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -81,18 +85,18 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
 
         <FormField
           control={form.control}
-          name='categoryId'
+          name="categoryId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Category</FormLabel>
               <Select onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder='Select a category' />
+                    <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {categories.map(category => (
+                  {categories.map((category) => (
                     <SelectItem
                       key={category.id}
                       value={category.id.toString()}
@@ -107,8 +111,8 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
           )}
         />
 
-        <Button type='submit' className='w-full' disabled={mutation.isPending}>
-          {mutation.isPending ? 'Creating...' : 'Create Asset'}
+        <Button type="submit" className="w-full" disabled={mutation.isPending}>
+          {mutation.isPending ? "Creating..." : "Create Asset"}
         </Button>
       </form>
     </Form>
