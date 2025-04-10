@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -7,33 +7,33 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { LockIcon, PencilIcon, PlusIcon, UnlockIcon } from 'lucide-react';
+} from "@/components/ui/table";
+import { LockIcon, PencilIcon, PlusIcon, UnlockIcon } from "lucide-react";
 
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import {
   categoriesQueryOptions,
   Category,
   useBlockCategory,
   useCreateCategory,
   useUpdateCategory,
-} from '@/queries/categories';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { Badge } from '../ui/badge';
+} from "@/queries/categories";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Badge } from "../ui/badge";
 
 // Define the schema for form validation
 const categoryFormSchema = z.object({
-  name: z.string().min(1, 'Category name is required'),
+  name: z.string().min(1, "Category name is required"),
   description: z.string().optional(),
 });
 
@@ -50,8 +50,8 @@ export function CategoriesSettings() {
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
     defaultValues: {
-      name: '',
-      description: '',
+      name: "",
+      description: "",
     },
   });
 
@@ -60,12 +60,12 @@ export function CategoriesSettings() {
     if (editingCategory) {
       form.reset({
         name: editingCategory.name,
-        description: editingCategory.description ?? '',
+        description: editingCategory.description ?? "",
       });
     } else {
       form.reset({
-        name: '',
-        description: '',
+        name: "",
+        description: "",
       });
     }
   }, [editingCategory, form]);
@@ -83,11 +83,11 @@ export function CategoriesSettings() {
         await createCategory.mutateAsync(data);
       }
       form.reset({
-        name: '',
-        description: '',
+        name: "",
+        description: "",
       });
     } catch (error) {
-      console.error('Failed to save category:', error);
+      console.error("Failed to save category:", error);
     }
   }
 
@@ -96,34 +96,34 @@ export function CategoriesSettings() {
     if (!open) {
       setEditingCategory(null);
       form.reset({
-        name: '',
-        description: '',
+        name: "",
+        description: "",
       });
     }
     setIsDialogOpen(open);
   }
 
   return (
-    <div className='space-y-6'>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='flex gap-4'>
+    <div className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex gap-4">
         <Input
-          placeholder='Category Name'
-          {...form.register('name')}
+          placeholder="Category Name"
+          {...form.register("name")}
           aria-invalid={!!form.formState.errors.name}
           disabled={createCategory.isPending}
         />
         <Input
-          placeholder='Description'
-          {...form.register('description')}
+          placeholder="Description"
+          {...form.register("description")}
           aria-invalid={!!form.formState.errors.description}
           disabled={createCategory.isPending}
         />
-        <Button type='submit' disabled={createCategory.isPending}>
+        <Button type="submit" disabled={createCategory.isPending}>
           {createCategory.isPending ? (
             <>Loading...</>
           ) : (
             <>
-              <PlusIcon className='mr-2 h-4 w-4' /> Add Category
+              <PlusIcon className="mr-2 h-4 w-4" /> Add Category
             </>
           )}
         </Button>
@@ -134,45 +134,47 @@ export function CategoriesSettings() {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead className='w-20'>Status</TableHead>
-            <TableHead className='w-28 text-center'>Actions</TableHead>
+            <TableHead className="w-20">Status</TableHead>
+            <TableHead className="w-28 text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {categories.map(category => (
+          {categories.map((category) => (
             <TableRow key={category.id}>
               <TableCell>{category.name}</TableCell>
-              <TableCell>{category.description || 'No description'}</TableCell>
-              <TableCell className='w-20'>
-                <Badge variant={category.isBlocked ? 'destructive' : 'default'}>
-                  {category.isBlocked ? 'Blocked' : 'Active'}
+              <TableCell>{category.description || "No description"}</TableCell>
+              <TableCell className="w-20">
+                <Badge
+                  variant={category.is_blocked ? "destructive" : "default"}
+                >
+                  {category.is_blocked ? "Blocked" : "Active"}
                 </Badge>
               </TableCell>
-              <TableCell className='w-28 flex justify-around'>
+              <TableCell className="w-28 flex justify-around">
                 <Button
-                  variant='ghost'
-                  size='icon'
-                  className='hover:bg-sky-200'
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-sky-200"
                   onClick={() => {
                     setEditingCategory(category);
                     setIsDialogOpen(true);
                   }}
                 >
-                  <PencilIcon className='h-4 w-4' />
+                  <PencilIcon className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant='ghost'
-                  size='icon'
+                  variant="ghost"
+                  size="icon"
                   className={cn(
-                    'hover:bg-red-300',
-                    category.isBlocked && 'text-red-500 hover:text-red-700'
+                    "hover:bg-red-300",
+                    category.is_blocked && "text-red-500 hover:text-red-700"
                   )}
                   onClick={() => blockCategory.mutateAsync(category.id)}
                 >
-                  {category.isBlocked ? (
-                    <LockIcon className='h-4 w-4' />
+                  {category.is_blocked ? (
+                    <LockIcon className="h-4 w-4" />
                   ) : (
-                    <UnlockIcon className='h-4 w-4' />
+                    <UnlockIcon className="h-4 w-4" />
                   )}
                 </Button>
               </TableCell>
@@ -185,29 +187,29 @@ export function CategoriesSettings() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingCategory ? 'Edit Category' : 'Add New Category'}
+              {editingCategory ? "Edit Category" : "Add New Category"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
-            <div className='grid gap-4'>
-              <div className='grid gap-2'>
-                <label htmlFor='name'>Name</label>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <label htmlFor="name">Name</label>
                 <Input
-                  id='name'
-                  {...form.register('name')}
-                  placeholder='Category Name'
+                  id="name"
+                  {...form.register("name")}
+                  placeholder="Category Name"
                 />
               </div>
-              <div className='grid gap-2'>
-                <label htmlFor='description'>Description</label>
+              <div className="grid gap-2">
+                <label htmlFor="description">Description</label>
                 <Input
-                  id='description'
-                  {...form.register('description')}
-                  placeholder='Description (Optional)'
+                  id="description"
+                  {...form.register("description")}
+                  placeholder="Description (Optional)"
                 />
               </div>
-              <Button type='submit'>
-                {editingCategory ? 'Update Category' : 'Add Category'}
+              <Button type="submit">
+                {editingCategory ? "Update Category" : "Add Category"}
               </Button>
             </div>
           </form>

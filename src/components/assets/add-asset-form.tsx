@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { categoriesQueryOptions } from "@/queries/categories";
+import { locationQueryOptions } from "@/queries/locations"; // Import location query options
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useMutation,
@@ -29,7 +30,12 @@ import { z } from "zod";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  categoryId: z.coerce.number().min(1, "Please select a category"),
+  quantity: z.coerce
+    .number()
+    .min(1, "Quantity must be at least 1")
+    .max(1000, "Quantity must be less than 1000"),
+  category: z.coerce.number().min(1, "Please select a category"),
+  location: z.coerce.number().optional(),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -41,8 +47,15 @@ interface AddAssetFormProps {
 export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
   const queryClient = useQueryClient();
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions);
+  const { data: locations } = useSuspenseQuery(locationQueryOptions); // Fetch locations
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      quantity: undefined,
+      category: undefined,
+      location: undefined
+    }
   });
 
   const mutation = useMutation({
@@ -85,7 +98,26 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
 
         <FormField
           control={form.control}
-          name="categoryId"
+          name="quantity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Quantity</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="Enter quantity"
+                  {...field}
+                  onChange={(e) => field.onChange(e.target.value)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="category"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Category</FormLabel>
@@ -102,6 +134,34 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                       value={category.id.toString()}
                     >
                       {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="location"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Location</FormLabel>
+              <Select onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a location" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {locations.map((location) => (
+                    <SelectItem
+                      key={location.id}
+                      value={location.id.toString()}
+                    >
+                      {location.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -11,7 +11,7 @@ export interface Location {
   type: 'building' | 'floor' | 'room' | 'area';
   parentLocation?: string;
   description?: string;
-  isBlocked?: boolean;
+  is_blocked?: boolean;
 }
 
 interface CreateLocationDTO {

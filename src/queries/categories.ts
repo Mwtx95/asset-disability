@@ -9,7 +9,7 @@ export interface Category {
   id: number;
   name: string;
   description: string;
-  isBlocked: boolean;
+  is_blocked: boolean;
 }
 
 interface CategoryStats {
@@ -17,7 +17,7 @@ interface CategoryStats {
   name: string;
   totalAssets: number;
   description: string;
-  isBlocked: boolean;
+  is_blocked: boolean;
   availableCount: number;
   maintenanceCount: number;
   brokenCount: number;
@@ -40,20 +40,20 @@ async function fetchCategoriesStats() {
 }
 
 async function createCategory(category: CreateCategoryDTO) {
-  const { data } = await axios.post<Category>('/categories', category);
+  const { data } = await axios.post<Category>('/categories/', category);
   return data;
 }
 
 async function updateCategory(category: Category) {
   const { data } = await axios.put<Category>(
-    `/categories/${category.id}`,
+    `/categories/${category.id}/`,
     category
   );
   return data;
 }
 
 async function blockCategory(id: number) {
-  const { data } = await axios.patch<Category>(`/categories/${id}/block`);
+  const { data } = await axios.patch<Category>(`/categories/${id}/toggle-block/`);
   return data;
 }
 

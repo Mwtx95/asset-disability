@@ -32,9 +32,9 @@ import { z } from "zod";
 
 const formSchema = z.object({
   assetId: z.coerce.number().min(1, "Please select an asset"),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+  // quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
   price: z.coerce.number().min(0, "Price must be non-negative"),
-  vendorId: z.coerce.number().min(1, "Please select a vendor"),
+  vendorId: z.coerce.number().min(1, "Please select a asset"),
   status: z.string().min(1, "Please select a status"),
 });
 
@@ -54,10 +54,10 @@ export function AddAssetItemForm({
   const { data: assets } = useSuspenseQuery(assetsQueryOptions);
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions);
 
-  // Find the category name from the ID
+  // Find the category name from the ID and filter assets by category
   const category = categories.find((cat) => cat.id === categoryId);
   const filteredAssets = assets.filter(
-    (asset) => asset.categoryName === category?.name
+    (asset) => asset.category === categoryId
   );
 
   const form = useForm<FormSchema>({
@@ -107,11 +107,17 @@ export function AddAssetItemForm({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {filteredAssets.map((asset) => (
-                    <SelectItem key={asset.id} value={String(asset.id)}>
-                      {asset.name}
+                  {filteredAssets.length > 0 ? (
+                    filteredAssets.map((asset) => (
+                      <SelectItem key={asset.id} value={asset.id.toString()}>
+                        {asset.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      No assets found for this category
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -119,7 +125,7 @@ export function AddAssetItemForm({
           )}
         />
 
-        <FormField
+        {/* <FormField
           control={form.control}
           name="quantity"
           render={({ field }) => (
@@ -131,7 +137,7 @@ export function AddAssetItemForm({
               <FormMessage />
             </FormItem>
           )}
-        />
+        /> */}
 
         <FormField
           control={form.control}
