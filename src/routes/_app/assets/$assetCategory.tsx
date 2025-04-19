@@ -78,11 +78,14 @@ function AssetDetailsRoute() {
     resolver: zodResolver(transferFormSchema),
   });
 
-  // Group assets by assetId
+  // Group assets by assetId AND name to handle multiple assets in the same category
   const groupedAssets = categoryAssets.reduce(
     (acc, asset) => {
-      if (!acc[asset.assetId]) {
-        acc[asset.assetId] = {
+      // Create a unique key combining asset ID and name
+      const assetKey = `${asset.assetId}_${asset.asset_name}`;
+
+      if (!acc[assetKey]) {
+        acc[assetKey] = {
           id: asset.assetId,
           name: asset.asset_name,
           quantity: 0,
@@ -90,12 +93,12 @@ function AssetDetailsRoute() {
           items: [],
         };
       }
-      acc[asset.assetId].quantity++;
-      acc[asset.assetId].items.push(asset);
+      acc[assetKey].quantity++;
+      acc[assetKey].items.push(asset);
       return acc;
     },
     {} as Record<
-      number,
+      string,
       {
         id: number;
         name: string;

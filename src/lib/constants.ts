@@ -12,6 +12,7 @@ export const ASSET_STATUSES = {
   MAINTENANCE: 'Maintenance',
   BROKEN: 'Broken',
   NOT_AVAILABLE: 'Not Available',
+  ASSIGNED: 'Assigned',
 } as const;
 
 export const ASSET_STATUS_BADGE_MAP = {
