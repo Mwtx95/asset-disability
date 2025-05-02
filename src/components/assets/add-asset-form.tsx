@@ -93,9 +93,14 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
         price: values.price,
         vendor: values.vendor,
         status: values.status,
-        purchase_date: values.purchaseDate, // Changed field name to match Django model
-        warranty_expiry_date: values.warrantyExpiryDate, // Changed field name to match Django model
+        purchase_date: values.purchaseDate,
+        warranty_expiry_date: values.warrantyExpiryDate,
         notes: values.notes,
+        // Serial number options
+        generateSerialNumbers: values.generateSerialNumbers,
+        serialNumberPrefix:
+          values.serialNumberPrefix ||
+          values.name.substring(0, 3).toUpperCase(),
       });
 
       const response = await axios.post("/assets/receive/", {
@@ -109,6 +114,11 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
         purchase_date: values.purchaseDate, // Changed field name to match Django model
         warranty_expiry_date: values.warrantyExpiryDate, // Changed field name to match Django model
         notes: values.notes,
+        // Serial number generation options
+        generateSerialNumbers: values.generateSerialNumbers,
+        serialNumberPrefix:
+          values.serialNumberPrefix ||
+          values.name.substring(0, 3).toUpperCase(),
       });
 
       console.log("Full API response:", response);
@@ -139,24 +149,13 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
         }
       }
 
-      // Generate serial numbers if needed
-      const serialNumbers: string[] = [];
-      if (values.generateSerialNumbers) {
-        const prefix =
-          values.serialNumberPrefix ||
-          values.name.substring(0, 3).toUpperCase();
-        const timestamp = Date.now().toString().slice(-6);
+      // We don't need to generate serial numbers in the frontend anymore
+      // The Django backend will handle serial number generation based on the
+      // generateSerialNumbers and serialNumberPrefix fields we sent
 
-        for (let i = 0; i < values.quantity; i++) {
-          // Format: PREFIX-TIMESTAMP-INDEX (e.g. LAP-123456-001)
-          const index = (i + 1).toString().padStart(3, "0");
-          serialNumbers.push(`${prefix}-${timestamp}-${index}`);
-        }
-      }
-
-      // IMPORTANT: Based on your Django code, it seems the /assets/receive/ endpoint
-      // already creates asset items when you send quantity > 1.
-      // We should NOT create additional asset items here to avoid duplication.
+      // IMPORTANT: Based on your Django code, the /assets/receive/ endpoint
+      // already creates asset items when you send quantity > 1 and handles the
+      // serial number generation based on the preferences we sent.
 
       console.log(
         "Asset creation complete. Returning asset data without creating additional items."

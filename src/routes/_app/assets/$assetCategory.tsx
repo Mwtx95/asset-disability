@@ -32,25 +32,45 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ASSET_STATUS_BADGE_MAP } from "@/lib/constants";
+import { Textarea } from "@/components/ui/textarea";
+import { ASSET_STATUS_BADGE_MAP, ASSET_STATUSES } from "@/lib/constants";
 import { assetsQueryOptions, useTransferAssetMutation } from "@/queries/assets";
 import {
   assetItemsByCategoryIdQueryOptions,
   assetItemsQueryOptions,
 } from "@/queries/assetsItems";
 import { locationQueryOptions } from "@/queries/locations";
+import { vendorsQueryOptions } from "@/queries/vendors";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import axios from "axios";
 import { ArrowLeft, ArrowRightLeft, Pencil, UserPlus } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 const transferFormSchema = z.object({
   locationId: z.coerce.number().min(1, "Please select a location"),
 });
 
+const editAssetItemFormSchema = z.object({
+  status: z.string().min(1, "Please select a status"),
+  location: z.coerce.number().min(1, "Please select a location"),
+  vendor: z.coerce.number().min(1, "Please select a vendor"),
+  price: z.coerce.number().min(0, "Price must be at least 0"),
+  serial_number: z.string().optional(),
+  notes: z.string().optional(),
+  purchase_date: z.string().optional(),
+  warranty_expiry_date: z.string().optional(),
+});
+
 type TransferFormValues = z.infer<typeof transferFormSchema>;
+type EditAssetItemFormValues = z.infer<typeof editAssetItemFormSchema>;
 
 export const Route = createFileRoute("/_app/assets/$assetCategory")({
   loader: ({ context: { queryClient }, params: { assetCategory } }) => {
@@ -69,14 +89,91 @@ function AssetDetailsRoute() {
     assetItemsByCategoryIdQueryOptions(parseInt(categoryId))
   );
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
+  const { data: vendors = [] } = useSuspenseQuery(vendorsQueryOptions);
   const transferAsset = useTransferAssetMutation();
+  const queryClient = useQueryClient();
   const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null);
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedItemForEdit, setSelectedItemForEdit] = useState<any>(null);
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
   });
+
+  const editForm = useForm<EditAssetItemFormValues>({
+    resolver: zodResolver(editAssetItemFormSchema),
+    defaultValues: {
+      status: "",
+      location: undefined,
+      vendor: undefined,
+      price: 0,
+      serial_number: "",
+      notes: "",
+      purchase_date: "",
+      warranty_expiry_date: "",
+    },
+  });
+
+  // Reset and populate the edit form when an item is selected for editing
+  const handleEditItem = (item: any) => {
+    setSelectedItemForEdit(item);
+
+    // Reset form with the item's current values
+    editForm.reset({
+      status: item.status,
+      location: item.locationId,
+      vendor: item.vendorId,
+      price: item.price,
+      serial_number: item.serial_number,
+      notes: item.notes || "",
+      purchase_date: item.purchase_date || "",
+      warranty_expiry_date: item.warranty_expiry_date || "",
+    });
+
+    setIsEditDialogOpen(true);
+  };
+
+  // Mutation for updating asset item
+  const updateAssetItem = useMutation({
+    mutationFn: async (values: EditAssetItemFormValues) => {
+      // Add the item ID to the update data
+      const updateData = {
+        ...values,
+        id: selectedItemForEdit.id,
+        asset: selectedItemForEdit.assetId,
+      };
+
+      const { data } = await axios.put(
+        `/assetitems/${selectedItemForEdit.id}/`,
+        updateData
+      );
+      return data;
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["asset-items"] });
+      queryClient.invalidateQueries({
+        queryKey: ["asset-items", "category", parseInt(categoryId)],
+      });
+
+      // Show success message and close dialog
+      toast.success("Asset item updated successfully");
+      setIsEditDialogOpen(false);
+      setSelectedItemForEdit(null);
+    },
+    onError: (error) => {
+      toast.error("Failed to update asset item");
+      console.error("Update error:", error);
+    },
+  });
+
+  // Handle edit form submission
+  const onSubmitEdit = (values: EditAssetItemFormValues) => {
+    updateAssetItem.mutate(values);
+  };
 
   // Group assets by assetId AND name to handle multiple assets in the same category
   const groupedAssets = categoryAssets.reduce(
@@ -170,7 +267,7 @@ function AssetDetailsRoute() {
           </TableHeader>
           <TableBody>
             {assets.map((asset) => (
-              <React.Fragment key={asset.id + Math.random()}>
+              <React.Fragment key={`asset-${asset.id}`}>
                 <TableRow
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() =>
@@ -211,8 +308,8 @@ function AssetDetailsRoute() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {asset.items.map((item) => (
-                              <TableRow key={item.id + Math.random()}>
+                            {asset.items.map((item, index) => (
+                              <TableRow key={`item-${item.id}-${index}`}>
                                 <TableCell>{item.serial_number}</TableCell>
                                 <TableCell>{item.location_name}</TableCell>
                                 <TableCell>
@@ -231,6 +328,10 @@ function AssetDetailsRoute() {
                                   <Button variant="outline" size="sm">
                                     <UserPlus className="h-4 w-4" />
                                     Assign
+                                  </Button>
+                                  <Button variant="outline" size="sm">
+                                    <Pencil className="h-4 w-4" />
+                                    Edit
                                   </Button>
                                   <Dialog
                                     open={
