@@ -36,7 +36,7 @@
     "@tanstack/react-router": "^1.79.0",
     "@tanstack/router-devtools": "^1.79.0",
     "axios": "^1.7.7",
-    "caniuse-lite": "^1.0.30001715",
+    "caniuse-lite": "^1.0.30001718",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
