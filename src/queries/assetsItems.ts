@@ -37,7 +37,7 @@ export interface CreateAssetItemDTO {
 }
 
 async function getAssetItems() {
-    const { data } = await axios.get<AssetItem[]>('/asset-items');
+    const { data } = await axios.get<AssetItem[]>('/assetitems/');
     return data;
 }
 
@@ -52,20 +52,20 @@ async function getAssetItemsByCategoryId(categoryId: number) {
 }
 
 async function createAssetItem(assetItem: CreateAssetItemDTO) {
-    const { data } = await axios.post<AssetItem>('/asset-items', assetItem);
+    const { data } = await axios.post<AssetItem>('/assetitems/', assetItem);
     return data;
 }
 
 async function updateAssetItem(assetItem: AssetItem) {
     const { data } = await axios.put<AssetItem>(
-        `/asset-items/${assetItem.id}`,
+        `/assetitems/${assetItem.id}/`,
         assetItem
     );
     return data;
 }
 
 async function disposeAssetItem(id: number) {
-    const { data } = await axios.patch<AssetItem>(`/asset-items/${id}/dispose`);
+    const { data } = await axios.patch<AssetItem>(`/assetitems/${id}/dispose/`);
     return data;
 }
 

@@ -25,11 +25,18 @@ import {
   Building2,
   Clock,
   FileText,
+  MapPin,
   Package,
   Plus,
   Settings,
 } from "lucide-react";
 import * as React from "react";
+import { locationQueryOptions } from "@/queries/locations";
+import { assetsQueryOptions } from "@/queries/assets";
+import { assetItemsQueryOptions } from "@/queries/assetsItems";
+import { categoriesStatsQueryOptions } from "@/queries/categories";
+import { vendorsQueryOptions } from "@/queries/vendors";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 interface StatCardProps {
   title: string;
@@ -82,44 +89,17 @@ interface RecentAssetActivity {
   id: string;
   asset: string;
   action: "assigned" | "maintenance" | "disposed" | "purchased";
-  department: string;
+  location: string;
   date: string;
   status: "completed" | "pending" | "in-progress";
 }
 
-const mockRecentActivities: RecentAssetActivity[] = [
-  {
-    id: "1",
-    asset: "Hearing Aid",
-    action: "assigned",
-    department: "Audio Department",
-    date: "2024-03-15",
-    status: "completed",
-  },
-  {
-    id: "2",
-    asset: "Wheelchair",
-    action: "purchased",
-    department: "Accessibility",
-    date: "2024-03-14",
-    status: "pending",
-  },
-  {
-    id: "3",
-    asset: "Braille Display",
-    action: "maintenance",
-    department: "IT Department",
-    date: "2024-03-13",
-    status: "in-progress",
-  },
-];
-
 const getStatusColor = (status: RecentAssetActivity["status"]) => {
   const colors = {
-    completed: "bg-green-500/10 text-green-500",
-    pending: "bg-yellow-500/10 text-yellow-500",
-    "in-progress": "bg-blue-500/10 text-blue-500",
-  };
+    completed: "success",
+    pending: "warning",
+    "in-progress": "secondary",
+  } as const;
   return colors[status];
 };
 
@@ -130,52 +110,141 @@ const getActionBadge = (action: RecentAssetActivity["action"]) => {
     disposed: { label: "Disposed", variant: "secondary" },
     purchased: { label: "Purchased", variant: "default" },
   };
-  return badges[action];
+  return badges[action] || { label: "Unknown", variant: "default" };
 };
 
-interface MockAssets {
-  id: string;
-  name: string;
-  department: string;
-  status: "in-use" | "available" | "maintenance";
-  assignedTo?: string;
-}
-
-const mockAssets: MockAssets[] = [
-  {
-    id: "1",
-    name: "Hearing Aid Model X",
-    department: "Audio Department",
-    status: "in-use",
-    assignedTo: "John Doe",
-  },
-  {
-    id: "2",
-    name: "Wheelchair Type A",
-    department: "Mobility",
-    status: "available",
-  },
-  {
-    id: "3",
-    name: "Visual Aid Device",
-    department: "Vision Support",
-    status: "maintenance",
-  },
-  {
-    id: "4",
-    name: "Support Crutches",
-    department: "Mobility",
-    status: "in-use",
-    assignedTo: "Jane Smith",
-  },
-];
-
 export const Route = createFileRoute("/_app/dashboard")({
+  loader: ({ context: { queryClient } }) => {
+    queryClient.ensureQueryData(locationQueryOptions);
+    queryClient.ensureQueryData(assetsQueryOptions);
+    queryClient.ensureQueryData(assetItemsQueryOptions);
+    queryClient.ensureQueryData(categoriesStatsQueryOptions);
+    queryClient.ensureQueryData(vendorsQueryOptions);
+  },
   component: DashboardComponent,
 });
 
 function DashboardComponent() {
-  const [isLoading] = React.useState(false);
+  // Set initial loading state to true for first data load
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<Error | null>(null);
+  const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
+  const { data: assets = [] } = useSuspenseQuery(assetsQueryOptions);
+
+  // Add error handling for assetItems
+  const { data: assetItems = [], error: assetItemsError } = useSuspenseQuery(
+    assetItemsQueryOptions
+  );
+
+  const { data: categoriesStats = [] } = useSuspenseQuery(
+    categoriesStatsQueryOptions
+  );
+  const { data: vendors = [] } = useSuspenseQuery(vendorsQueryOptions);
+
+  // Set error state if any query fails
+  React.useEffect(() => {
+    if (assetItemsError) {
+      setError(assetItemsError as Error);
+      console.error("Error fetching asset items:", assetItemsError);
+    }
+  }, [assetItemsError]);
+
+  // Set loading to false once data is loaded
+  React.useEffect(() => {
+    if (locations.length > 0 || assets.length > 0) {
+      setIsLoading(false);
+    }
+  }, [locations, assets]);
+
+  // Transform real assets data for the AssetsListModal
+  const transformedAssets = assets.map((asset) => ({
+    id: asset.id?.toString() || "",
+    name: asset.name || "",
+    department: asset.categoryName || "", // Use category name instead of department
+    location: asset.location || "Unknown",
+    status: (asset.status?.toLowerCase() || "available") as
+      | "in-use"
+      | "available"
+      | "maintenance",
+    assignedTo: asset.assignedTo || undefined,
+  }));
+
+  // Count assets by location
+  const assetsByLocation = locations.map((location) => {
+    const count = assets.filter(
+      (asset) =>
+        asset.location &&
+        typeof asset.location === "string" &&
+        asset.location.includes(location.name)
+    ).length;
+    return { ...location, assetCount: count };
+  });
+
+  // Create recent activities from asset items
+  const recentActivities = assetItems.length
+    ? assetItems
+        // Sort by purchase date from newest to oldest
+        .sort((a, b) => {
+          const dateA = a.purchaseDate ? new Date(a.purchaseDate).getTime() : 0;
+          const dateB = b.purchaseDate ? new Date(b.purchaseDate).getTime() : 0;
+          return dateB - dateA; // Descending order (newest first)
+        })
+        .slice(0, 5)
+        .map((item, index) => ({
+          id: item.id?.toString() || index.toString(),
+          asset: item.asset_name || "Unknown Asset",
+          action: determineAction(item),
+          location: item.location_name || "Unknown Location",
+          date: formatDate(item.purchaseDate),
+          status: determineStatus(item.status || ""),
+        }))
+    : []; // Return empty array if no assetItems
+
+  function determineAction(
+    item: any
+  ): "assigned" | "maintenance" | "disposed" | "purchased" {
+    if (!item || !item.status) return "purchased"; // Default to purchased if no status
+
+    const status = item.status.toUpperCase();
+    if (status === "ASSIGNED") return "assigned";
+    if (status === "MAINTENANCE") return "maintenance";
+    if (status === "BROKEN") return "disposed";
+    return "purchased";
+  }
+
+  function determineStatus(
+    status: string
+  ): "completed" | "pending" | "in-progress" {
+    if (!status) return "pending"; // Default to pending if no status
+
+    const statusUpper = status.toUpperCase();
+    if (statusUpper === "AVAILABLE") return "completed";
+    if (statusUpper === "MAINTENANCE") return "in-progress";
+    return "pending";
+  }
+
+  function formatDate(date: any): string {
+    if (!date) return new Date().toISOString().split("T")[0];
+
+    try {
+      // If it's already a string in a date format, just extract the date part
+      if (typeof date === "string" && date.includes("T")) {
+        return date.split("T")[0];
+      }
+
+      // If it's a date object or a date string, parse it
+      const dateObj = new Date(date);
+      if (!isNaN(dateObj.getTime())) {
+        return dateObj.toISOString().split("T")[0];
+      }
+
+      // Fallback to current date
+      return new Date().toISOString().split("T")[0];
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return new Date().toISOString().split("T")[0];
+    }
+  }
 
   if (isLoading) {
     return (
@@ -219,10 +288,10 @@ function DashboardComponent() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <AssetsListModal assets={mockAssets}>
+        <AssetsListModal assets={transformedAssets}>
           <StatCard
             title="Total Assets"
-            value="284"
+            value={(assets?.length || 0).toString()}
             icon={<Package className="h-4 w-4" />}
             description="Assets in inventory"
             trend="up"
@@ -230,26 +299,26 @@ function DashboardComponent() {
           />
         </AssetsListModal>
         <StatCard
-          title="Departments"
-          value="8"
-          icon={<Building2 className="h-4 w-4" />}
-          description="Using asset management"
+          title="Locations"
+          value={(locations?.length || 0).toString()}
+          icon={<MapPin className="h-4 w-4" />}
+          description="Managed in system"
         />
         <StatCard
-          title="Pending Requests"
-          value="12"
+          title="Categories"
+          value={(categoriesStats?.length || 0).toString()}
           icon={<Clock className="h-4 w-4" />}
-          description="Awaiting approval"
+          description="Asset categories"
           trend="up"
-          trendValue="+8.2%"
+          trendValue="+2.1%"
         />
         <StatCard
-          title="Issues Reported"
-          value="4"
+          title="Vendors"
+          value={(vendors?.length || 0).toString()}
           icon={<AlertCircle className="h-4 w-4" />}
-          description="In the last month"
-          trend="down"
-          trendValue="-2.3%"
+          description="Active vendors"
+          trend="up"
+          trendValue="+1.2%"
         />
       </div>
 
@@ -263,35 +332,100 @@ function DashboardComponent() {
               <TableRow>
                 <TableHead>Asset</TableHead>
                 <TableHead>Action</TableHead>
-                <TableHead>Department</TableHead>
+                <TableHead>Location</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockRecentActivities.map((activity) => (
-                <TableRow key={activity.id}>
-                  <TableCell className="font-medium">
-                    {activity.asset}
+              {recentActivities.length > 0 ? (
+                recentActivities.map((activity) => (
+                  <TableRow key={activity.id}>
+                    <TableCell className="font-medium">
+                      {activity.asset}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          (getActionBadge(activity.action)?.variant as
+                            | "outline"
+                            | "destructive"
+                            | "secondary"
+                            | "default") || "default"
+                        }
+                        className="capitalize"
+                      >
+                        {activity.action}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{activity.location}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={getStatusColor(activity.status)}
+                        className="capitalize"
+                      >
+                        {activity.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{activity.date}</TableCell>
+                  </TableRow>
+                ))
+              ) : error ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-4 text-red-500"
+                  >
+                    Error loading activities: {error.message}
                   </TableCell>
+                </TableRow>
+              ) : isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    <div className="flex justify-center">
+                      <Skeleton className="h-4 w-[200px]" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    No recent activities found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Location Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Assets Count</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(assetsByLocation || []).slice(0, 4).map((location) => (
+                <TableRow key={location.id}>
+                  <TableCell className="font-medium">{location.name}</TableCell>
+                  <TableCell className="capitalize">{location.type}</TableCell>
+                  <TableCell>{location.assetCount}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={getActionBadge(activity.action)}
-                      className="capitalize"
+                      variant={location.is_blocked ? "destructive" : "default"}
                     >
-                      {activity.action}
+                      {location.is_blocked ? "Blocked" : "Active"}
                     </Badge>
                   </TableCell>
-                  <TableCell>{activity.department}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={getStatusColor(activity.status)}
-                      className="capitalize"
-                    >
-                      {activity.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{activity.date}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
