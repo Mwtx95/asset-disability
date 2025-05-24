@@ -1,13 +1,6 @@
-import { AddAssetForm } from "@/components/assets/add-asset-form";
 import { AssetsListModal } from "@/components/interactive-dashboard-modals/assets-list-modal";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -17,18 +10,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertCircle,
   ArrowDownRight,
   ArrowUpRight,
+  BarChart3,
   Building2,
+  CheckCircle,
   Clock,
-  FileText,
   MapPin,
   Package,
-  Plus,
   Settings,
+  TrendingUp,
+  Users,
+  Wrench,
+  XCircle,
 } from "lucide-react";
 import * as React from "react";
 import { locationQueryOptions } from "@/queries/locations";
@@ -40,11 +37,12 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 
 interface StatCardProps {
   title: string;
-  value: string;
+  value: string | number;
   icon: React.ReactNode;
   description: string;
   trend?: "up" | "down";
   trendValue?: string;
+  onClick?: () => void;
 }
 
 function StatCard({
@@ -54,31 +52,69 @@ function StatCard({
   description,
   trend,
   trendValue,
+  onClick,
 }: StatCardProps) {
   return (
-    <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
+    <Card 
+      className={`cursor-pointer hover:bg-accent/50 transition-colors ${onClick ? 'hover:shadow-md' : ''}`}
+      onClick={onClick}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className="h-4 w-4 text-muted-foreground">{icon}</div>
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <div className="h-5 w-5 text-muted-foreground">{icon}</div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <div className="flex items-center text-xs text-muted-foreground">
-          {trend && (
+        <div className="text-3xl font-bold">{value}</div>
+        <div className="flex items-center text-xs text-muted-foreground mt-1">
+          {trend && trendValue && (
             <>
               {trend === "up" ? (
-                <ArrowUpRight className="mr-1 h-4 w-4 text-green-500" />
+                <ArrowUpRight className="mr-1 h-3 w-3 text-green-500" />
               ) : (
-                <ArrowDownRight className="mr-1 h-4 w-4 text-red-500" />
+                <ArrowDownRight className="mr-1 h-3 w-3 text-red-500" />
               )}
               <span
                 className={trend === "up" ? "text-green-500" : "text-red-500"}
               >
                 {trendValue}
               </span>
+              <span className="ml-1">from last month</span>
             </>
           )}
-          <span className="ml-1">{description}</span>
+          {!trend && <span>{description}</span>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface StatusCardProps {
+  title: string;
+  count: number;
+  percentage: number;
+  icon: React.ReactNode;
+  color: string;
+  bgColor: string;
+}
+
+function StatusCard({ title, count, percentage, icon, color, bgColor }: StatusCardProps) {
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className={`p-2 rounded-lg ${bgColor}`}>
+              <div className={`h-5 w-5 ${color}`}>{icon}</div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">{title}</p>
+              <p className="text-2xl font-bold">{count}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">of total</p>
+            <p className="text-lg font-semibold">{percentage.toFixed(1)}%</p>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -96,9 +132,9 @@ interface RecentAssetActivity {
 
 const getStatusColor = (status: RecentAssetActivity["status"]) => {
   const colors = {
-    completed: "success",
-    pending: "warning",
-    "in-progress": "secondary",
+    completed: "default",
+    pending: "secondary",
+    "in-progress": "destructive",
   } as const;
   return colors[status];
 };
@@ -125,23 +161,20 @@ export const Route = createFileRoute("/_app/dashboard")({
 });
 
 function DashboardComponent() {
-  // Set initial loading state to true for first data load
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
+  
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
   const { data: assets = [] } = useSuspenseQuery(assetsQueryOptions);
-
-  // Add error handling for assetItems
   const { data: assetItems = [], error: assetItemsError } = useSuspenseQuery(
     assetItemsQueryOptions
   );
-
   const { data: categoriesStats = [] } = useSuspenseQuery(
     categoriesStatsQueryOptions
   );
   const { data: vendors = [] } = useSuspenseQuery(vendorsQueryOptions);
 
-  // Set error state if any query fails
+  // Handle errors
   React.useEffect(() => {
     if (assetItemsError) {
       setError(assetItemsError as Error);
@@ -151,7 +184,7 @@ function DashboardComponent() {
 
   // Set loading to false once data is loaded
   React.useEffect(() => {
-    if (locations.length > 0 || assets.length > 0) {
+    if (locations.length >= 0 && assets.length >= 0) {
       setIsLoading(false);
     }
   }, [locations, assets]);
@@ -160,7 +193,7 @@ function DashboardComponent() {
   const transformedAssets = assets.map((asset) => ({
     id: asset.id?.toString() || "",
     name: asset.name || "",
-    department: asset.categoryName || "", // Use category name instead of department
+    department: asset.categoryName || "",
     location: asset.location || "Unknown",
     status: (asset.status?.toLowerCase() || "available") as
       | "in-use"
@@ -169,41 +202,61 @@ function DashboardComponent() {
     assignedTo: asset.assignedTo || undefined,
   }));
 
-  // Count assets by location
-  const assetsByLocation = locations.map((location) => {
-    const count = assets.filter(
-      (asset) =>
-        asset.location &&
-        typeof asset.location === "string" &&
-        asset.location.includes(location.name)
-    ).length;
-    return { ...location, assetCount: count };
-  });
+  // Calculate asset status breakdown
+  const statusBreakdown = React.useMemo(() => {
+    const totalItems = assetItems.length;
+    const breakdown = {
+      available: assetItems.filter(item => item.status === 'AVAILABLE').length,
+      assigned: assetItems.filter(item => item.status === 'ASSIGNED').length,
+      maintenance: assetItems.filter(item => item.status === 'MAINTENANCE').length,
+      broken: assetItems.filter(item => item.status === 'BROKEN').length,
+    };
 
-  // Create recent activities from asset items
-  const recentActivities = assetItems.length
-    ? assetItems
-        // Sort by purchase date from newest to oldest
-        .sort((a, b) => {
-          const dateA = a.purchaseDate ? new Date(a.purchaseDate).getTime() : 0;
-          const dateB = b.purchaseDate ? new Date(b.purchaseDate).getTime() : 0;
-          return dateB - dateA; // Descending order (newest first)
-        })
-        .slice(0, 5)
-        .map((item, index) => ({
-          id: item.id?.toString() || index.toString(),
-          asset: item.asset_name || "Unknown Asset",
-          action: determineAction(item),
-          location: item.location_name || "Unknown Location",
-          date: formatDate(item.purchaseDate),
-          status: determineStatus(item.status || ""),
-        }))
-    : []; // Return empty array if no assetItems
+    return {
+      available: {
+        count: breakdown.available,
+        percentage: totalItems > 0 ? (breakdown.available / totalItems) * 100 : 0,
+      },
+      assigned: {
+        count: breakdown.assigned,
+        percentage: totalItems > 0 ? (breakdown.assigned / totalItems) * 100 : 0,
+      },
+      maintenance: {
+        count: breakdown.maintenance,
+        percentage: totalItems > 0 ? (breakdown.maintenance / totalItems) * 100 : 0,
+      },
+      broken: {
+        count: breakdown.broken,
+        percentage: totalItems > 0 ? (breakdown.broken / totalItems) * 100 : 0,
+      },
+    };
+  }, [assetItems]);
+
+  // Create recent activities from asset items (last 5 activities)
+  const recentActivities = React.useMemo(() => {
+    if (!assetItems.length) return [];
+    
+    return assetItems
+      .sort((a, b) => {
+        const dateA = a.purchaseDate ? new Date(a.purchaseDate).getTime() : 0;
+        const dateB = b.purchaseDate ? new Date(b.purchaseDate).getTime() : 0;
+        return dateB - dateA;
+      })
+      .slice(0, 5)
+      .map((item, index) => ({
+        id: item.id?.toString() || index.toString(),
+        asset: item.asset_name || "Unknown Asset",
+        action: determineAction(item),
+        location: item.location_name || "Unknown Location",
+        date: formatDate(item.purchaseDate),
+        status: determineStatus(item.status || ""),
+      }));
+  }, [assetItems]);
 
   function determineAction(
     item: any
   ): "assigned" | "maintenance" | "disposed" | "purchased" {
-    if (!item || !item.status) return "purchased"; // Default to purchased if no status
+    if (!item || !item.status) return "purchased";
 
     const status = item.status.toUpperCase();
     if (status === "ASSIGNED") return "assigned";
@@ -215,7 +268,7 @@ function DashboardComponent() {
   function determineStatus(
     status: string
   ): "completed" | "pending" | "in-progress" {
-    if (!status) return "pending"; // Default to pending if no status
+    if (!status) return "pending";
 
     const statusUpper = status.toUpperCase();
     if (statusUpper === "AVAILABLE") return "completed";
@@ -227,18 +280,15 @@ function DashboardComponent() {
     if (!date) return new Date().toISOString().split("T")[0];
 
     try {
-      // If it's already a string in a date format, just extract the date part
       if (typeof date === "string" && date.includes("T")) {
         return date.split("T")[0];
       }
 
-      // If it's a date object or a date string, parse it
       const dateObj = new Date(date);
       if (!isNaN(dateObj.getTime())) {
         return dateObj.toISOString().split("T")[0];
       }
 
-      // Fallback to current date
       return new Date().toISOString().split("T")[0];
     } catch (e) {
       console.error("Error formatting date:", e);
@@ -246,15 +296,39 @@ function DashboardComponent() {
     }
   }
 
+  const getActionBadge = (action: RecentAssetActivity["action"]) => {
+    const badges = {
+      assigned: { label: "Assigned", variant: "outline" },
+      maintenance: { label: "Maintenance", variant: "destructive" },
+      disposed: { label: "Disposed", variant: "secondary" },
+      purchased: { label: "Purchased", variant: "default" },
+    };
+    return badges[action] || { label: "Unknown", variant: "default" };
+  };
+
+  const getStatusColor = (status: RecentAssetActivity["status"]) => {
+    const colors = {
+      completed: "default",
+      pending: "secondary",
+      "in-progress": "destructive",
+    } as const;
+    return colors[status];
+  };
+
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-between space-y-2">
+          <Skeleton className="h-9 w-[200px]" />
+        </div>
+        
+        {/* Top-level stats skeleton */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <Skeleton className="h-4 w-[100px]" />
-                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-5 w-5" />
               </CardHeader>
               <CardContent>
                 <Skeleton className="h-8 w-[60px]" />
@@ -263,173 +337,222 @@ function DashboardComponent() {
             </Card>
           ))}
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
+
+        {/* Status breakdown skeleton */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-4 w-[100px]" />
-                <Skeleton className="h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-[200px]" />
-                <Skeleton className="mt-4 h-8 w-full" />
+              <CardContent className="p-6">
+                <Skeleton className="h-16 w-full" />
               </CardContent>
             </Card>
           ))}
         </div>
+
+        {/* Recent activities skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-[150px]" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground">
+            Overview of your asset management system
+          </p>
+        </div>
       </div>
 
+      {/* Top-level Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <AssetsListModal assets={transformedAssets}>
           <StatCard
             title="Total Assets"
-            value={(assets?.length || 0).toString()}
-            icon={<Package className="h-4 w-4" />}
-            description="Assets in inventory"
+            value={assetItems.length}
+            icon={<Package className="h-5 w-5" />}
+            description="Items in inventory"
             trend="up"
-            trendValue="+4.5%"
+            trendValue="+12.5%"
           />
         </AssetsListModal>
+        
         <StatCard
-          title="Locations"
-          value={(locations?.length || 0).toString()}
-          icon={<MapPin className="h-4 w-4" />}
-          description="Managed in system"
-        />
-        <StatCard
-          title="Categories"
-          value={(categoriesStats?.length || 0).toString()}
-          icon={<Clock className="h-4 w-4" />}
-          description="Asset categories"
+          title="Locations (Branches)"
+          value={locations.length}
+          icon={<Building2 className="h-5 w-5" />}
+          description="Active locations"
           trend="up"
           trendValue="+2.1%"
         />
+        
+        <StatCard
+          title="Categories"
+          value={categoriesStats.length}
+          icon={<Settings className="h-5 w-5" />}
+          description="Asset categories"
+          trend="up"
+          trendValue="+5.3%"
+        />
+        
         <StatCard
           title="Vendors"
-          value={(vendors?.length || 0).toString()}
-          icon={<AlertCircle className="h-4 w-4" />}
+          value={vendors.length}
+          icon={<Users className="h-5 w-5" />}
           description="Active vendors"
           trend="up"
           trendValue="+1.2%"
         />
       </div>
 
+      {/* Asset Status Breakdown */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Asset Status Overview</h3>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatusCard
+            title="Available"
+            count={statusBreakdown.available.count}
+            percentage={statusBreakdown.available.percentage}
+            icon={<CheckCircle />}
+            color="text-green-600"
+            bgColor="bg-green-100"
+          />
+          
+          <StatusCard
+            title="Assigned"
+            count={statusBreakdown.assigned.count}
+            percentage={statusBreakdown.assigned.percentage}
+            icon={<Users />}
+            color="text-blue-600"
+            bgColor="bg-blue-100"
+          />
+          
+          <StatusCard
+            title="Maintenance"
+            count={statusBreakdown.maintenance.count}
+            percentage={statusBreakdown.maintenance.percentage}
+            icon={<Wrench />}
+            color="text-orange-600"
+            bgColor="bg-orange-100"
+          />
+          
+          <StatusCard
+            title="Broken"
+            count={statusBreakdown.broken.count}
+            percentage={statusBreakdown.broken.percentage}
+            icon={<XCircle />}
+            color="text-red-600"
+            bgColor="bg-red-100"
+          />
+        </div>
+      </div>
+
+      {/* Charts Section Placeholder */}
       <Card>
-        <CardHeader>
-          <CardTitle>Recent Activities</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">Analytics & Charts</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Visual insights and trends (Coming Soon)
+            </p>
+          </div>
+          <BarChart3 className="h-5 w-5 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Asset</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentActivities.length > 0 ? (
-                recentActivities.map((activity) => (
-                  <TableRow key={activity.id}>
-                    <TableCell className="font-medium">
-                      {activity.asset}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          (getActionBadge(activity.action)?.variant as
-                            | "outline"
-                            | "destructive"
-                            | "secondary"
-                            | "default") || "default"
-                        }
-                        className="capitalize"
-                      >
-                        {activity.action}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{activity.location}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={getStatusColor(activity.status)}
-                        className="capitalize"
-                      >
-                        {activity.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{activity.date}</TableCell>
-                  </TableRow>
-                ))
-              ) : error ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-center py-4 text-red-500"
-                  >
-                    Error loading activities: {error.message}
-                  </TableCell>
-                </TableRow>
-              ) : isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4">
-                    <div className="flex justify-center">
-                      <Skeleton className="h-4 w-[200px]" />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4">
-                    No recent activities found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20">
+            <div className="text-center">
+              <TrendingUp className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Charts and analytics will be displayed here
+              </p>
+              <p className="text-xs text-muted-foreground/70">
+                Asset utilization, trends, and performance metrics
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
+      {/* Recent Activities */}
       <Card>
         <CardHeader>
-          <CardTitle>Location Overview</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Recent Activities
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Latest asset movements and updates
+          </p>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Assets Count</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(assetsByLocation || []).slice(0, 4).map((location) => (
-                <TableRow key={location.id}>
-                  <TableCell className="font-medium">{location.name}</TableCell>
-                  <TableCell className="capitalize">{location.type}</TableCell>
-                  <TableCell>{location.assetCount}</TableCell>
-                  <TableCell>
+          {recentActivities.length > 0 ? (
+            <div className="space-y-4">
+              {recentActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <Package className="h-8 w-8 text-muted-foreground p-1.5 bg-muted rounded-full" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{activity.asset}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {activity.location}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
                     <Badge
-                      variant={location.is_blocked ? "destructive" : "default"}
+                      variant={
+                        (getActionBadge(activity.action)?.variant as
+                          | "outline"
+                          | "destructive"
+                          | "secondary"
+                          | "default") || "default"
+                      }
                     >
-                      {location.is_blocked ? "Blocked" : "Active"}
+                      {activity.action}
                     </Badge>
-                  </TableCell>
-                </TableRow>
+                    <Badge variant={getStatusColor(activity.status)}>
+                      {activity.status}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {activity.date}
+                    </span>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
+              <p className="text-red-500">Error loading activities: {error.message}</p>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Clock className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-muted-foreground">No recent activities found</p>
+              <p className="text-sm text-muted-foreground/70">
+                Activities will appear here as assets are managed
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
