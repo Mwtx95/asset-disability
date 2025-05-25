@@ -102,8 +102,10 @@ function AssetsRoute() {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [isAddModalOpen, setIsAddModalOpen] = useState(!!addAsset);
   const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
-  const [sortField, setSortField] = useState<string>("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortConfig, setSortConfig] = useState<{field: string, direction: "asc" | "desc"}>({
+    field: "name",
+    direction: "asc"
+  });
   
   const [filters, setFilters] = useState<AssetFilters>({
     category: "all",
@@ -164,26 +166,72 @@ function AssetsRoute() {
 
     // Sort data
     filtered.sort((a, b) => {
-      let aValue = a[sortField as keyof typeof a] as any;
-      let bValue = b[sortField as keyof typeof b] as any;
+      let aValue: any;
+      let bValue: any;
+      
+      // Special handling for different field types
+      if (sortConfig.field === "categoryName") {
+        // Use the same comprehensive category lookup for sorting
+        const getCategory = (asset: any) => {
+          const assetAny = asset as any;
+          const category = categories.find(c => 
+            c.name === asset.categoryName ||
+            c.id === assetAny.categoryId || 
+            c.id === Number(assetAny.category) || 
+            c.id.toString() === assetAny.category ||
+            c.name === assetAny.category
+          );
+          return category?.name || asset.categoryName || assetAny.category || 'Unknown';
+        };
+        
+        aValue = getCategory(a);
+        bValue = getCategory(b);
+      } else if (sortConfig.field === "location") {
+        // Use location name lookup for sorting
+        const getLocation = (asset: any) => {
+          const locationName = locations.find(loc => loc.id === asset.location)?.name || asset.location || 'Unknown';
+          return locationName;
+        };
+        
+        aValue = getLocation(a);
+        bValue = getLocation(b);
+      } else if (sortConfig.field === "vendor") {
+        // Use vendor name lookup for sorting
+        const getVendor = (asset: any) => {
+          const vendor = vendors.find(v => 
+            v.id === asset.vendorId || 
+            v.id === Number(asset.vendor) || 
+            v.id.toString() === asset.vendor ||
+            v.name === asset.vendor
+          );
+          const vendorName = vendor?.name || asset.vendor || 'N/A';
+          return vendorName;
+        };
+        
+        aValue = getVendor(a);
+        bValue = getVendor(b);
+      } else {
+        aValue = a[sortConfig.field as keyof typeof a] as any;
+        bValue = b[sortConfig.field as keyof typeof b] as any;
+      }
       
       // Handle undefined/null values
       if (aValue == null && bValue == null) return 0;
-      if (aValue == null) return sortDirection === "asc" ? -1 : 1;
-      if (bValue == null) return sortDirection === "asc" ? 1 : -1;
+      if (aValue == null) return sortConfig.direction === "asc" ? -1 : 1;
+      if (bValue == null) return sortConfig.direction === "asc" ? 1 : -1;
       
       if (typeof aValue === "string" && typeof bValue === "string") {
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
       }
       
-      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
     });
 
     return filtered;
-  }, [assets, searchQuery, filters, sortField, sortDirection]);
+  }, [assets, searchQuery, filters, sortConfig, categories, locations, vendors]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedAssets.length / ITEMS_PER_PAGE);
@@ -192,12 +240,16 @@ function AssetsRoute() {
 
   // Handlers
   const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
+    setSortConfig(prev => {
+      if (prev.field === field) {
+        // Same field, toggle direction
+        const newDirection = prev.direction === "asc" ? "desc" : "asc";
+        return { field, direction: newDirection };
+      } else {
+        // Different field, set to asc
+        return { field, direction: "asc" };
+      }
+    });
   };
 
   const handleSelectAsset = (assetId: number) => {
@@ -435,29 +487,45 @@ function AssetsRoute() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">
+                    <TableHead className="w-16 text-center">
                       <Checkbox
                         checked={selectedAssets.size === paginatedAssets.length && paginatedAssets.length > 0}
                         onCheckedChange={handleSelectAll}
                       />
                     </TableHead>
-                    <TableHead className="w-12"></TableHead> {/* Expand column */}
-                    <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
+                    <TableHead className="w-16 text-center"></TableHead> {/* Expand column */}
+                    <TableHead className="cursor-pointer px-2" onClick={() => handleSort("name")}>
                       <div className="flex items-center gap-1">
-                        Asset Name
+                      Asset Name
+                      <ArrowUpDown className="h-4 w-4" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer text-center px-2 w-20" onClick={() => handleSort("quantity")}>
+                      <div className="flex items-center justify-center gap-1">
+                        Quantity
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead className="cursor-pointer" onClick={() => handleSort("categoryName")}>
+                    <TableHead className="w-8"></TableHead> {/* Empty spacing column */}
+                    <TableHead className="cursor-pointer px-4" onClick={() => handleSort("categoryName")}>
                       <div className="flex items-center gap-1">
                         Category
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead className="w-12">Actions</TableHead>
+                    <TableHead className="cursor-pointer px-4" onClick={() => handleSort("location")}>
+                      <div className="flex items-center gap-1">
+                        Location
+                        <ArrowUpDown className="h-4 w-4" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer px-4" onClick={() => handleSort("vendor")}>
+                      <div className="flex items-center gap-1">
+                        Vendor
+                        <ArrowUpDown className="h-4 w-4" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="w-20 text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -488,6 +556,7 @@ function AssetsRoute() {
                           </TableCell>
                           <TableCell className="font-medium">{asset.name}</TableCell>
                           <TableCell className="text-center">{asset.quantity || 0}</TableCell>
+                          <TableCell></TableCell> {/* Empty spacing cell */}
                           <TableCell>
                             <Badge variant="outline">
                               {(() => {
@@ -550,7 +619,7 @@ function AssetsRoute() {
                         </TableRow>
                         {expandedRows.has(asset.id) && (
                           <TableRow>
-                            <TableCell colSpan={8} className="bg-muted/30 p-0">
+                            <TableCell colSpan={9} className="bg-muted/30 p-0">
                               <div className="p-4 space-y-3">
                                 <h4 className="font-medium text-sm text-muted-foreground mb-3">
                                   Asset Details - Expanded
