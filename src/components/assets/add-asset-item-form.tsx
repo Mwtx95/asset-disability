@@ -57,7 +57,7 @@ export function AddAssetItemForm({
   // Find the category name from the ID and filter assets by category
   const category = categories.find((cat) => cat.id === categoryId);
   const filteredAssets = assets.filter(
-    (asset) => asset.category === categoryId
+    (asset) => asset.categoryName === category?.name
   );
 
   const form = useForm<FormSchema>({

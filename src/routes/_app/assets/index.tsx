@@ -32,7 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { assetsQueryOptions } from "@/queries/assets";
+import { assetsQueryOptions, Asset } from "@/queries/assets";
 import { categoriesStatsQueryOptions } from "@/queries/categories";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
@@ -102,6 +102,8 @@ function AssetsRoute() {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [isAddModalOpen, setIsAddModalOpen] = useState(!!addAsset);
   const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
+  const [selectedAssetForDetails, setSelectedAssetForDetails] = useState<Asset | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{field: string, direction: "asc" | "desc"}>({
     field: "name",
     direction: "asc"
@@ -540,19 +542,33 @@ function AssetsRoute() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleExpand(asset.id)}
-                              className="h-8 w-8 p-0"
-                              title="View asset details"
-                            >
-                              <ChevronDown 
-                                className={`h-4 w-4 transition-transform ${
-                                  expandedRows.has(asset.id) ? 'rotate-180' : ''
-                                }`} 
-                              />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleToggleExpand(asset.id)}
+                                className="h-8 w-8 p-0"
+                                title="View asset details"
+                              >
+                                <ChevronDown 
+                                  className={`h-4 w-4 transition-transform ${
+                                    expandedRows.has(asset.id) ? 'rotate-180' : ''
+                                  }`} 
+                                />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedAssetForDetails(asset);
+                                  setIsDetailsDialogOpen(true);
+                                }}
+                                className="h-8 w-8 p-0"
+                                title="View full details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                           <TableCell className="font-medium">{asset.name}</TableCell>
                           <TableCell className="text-center">{asset.quantity || 0}</TableCell>
@@ -596,6 +612,15 @@ function AssetsRoute() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    setSelectedAssetForDetails(asset);
+                                    setIsDetailsDialogOpen(true);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   onClick={() => navigate({ 
                                     to: '/assets/$assetCategory', 
@@ -730,6 +755,18 @@ function AssetsRoute() {
                           }`} 
                         />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedAssetForDetails(asset);
+                          setIsDetailsDialogOpen(true);
+                        }}
+                        className="h-8 w-8 p-0"
+                        title="View full details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
@@ -737,6 +774,15 @@ function AssetsRoute() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setSelectedAssetForDetails(asset);
+                              setIsDetailsDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => navigate({ 
                               to: '/assets/$assetCategory', 
@@ -920,6 +966,213 @@ function AssetsRoute() {
             <DialogTitle>Add New Asset</DialogTitle>
           </DialogHeader>
           <AddAssetForm onSuccess={handleCloseModal} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Asset Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Asset Details</DialogTitle>
+          </DialogHeader>
+          {selectedAssetForDetails && (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground">Basic Information</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Asset Name:</span>
+                      <span className="text-sm font-medium">{selectedAssetForDetails.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Description:</span>
+                      <span className="text-sm font-medium text-right">
+                        {selectedAssetForDetails.description || 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Category:</span>
+                      <span className="text-sm font-medium">
+                        {(() => {
+                          const assetAny = selectedAssetForDetails as any;
+                          const category = categories.find(c => 
+                            c.name === selectedAssetForDetails.categoryName ||
+                            c.id === assetAny.categoryId || 
+                            c.id === Number(assetAny.category) || 
+                            c.id.toString() === assetAny.category ||
+                            c.name === assetAny.category
+                          );
+                          return category?.name || selectedAssetForDetails.categoryName || 'Unknown';
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Quantity:</span>
+                      <span className="text-sm font-medium">{selectedAssetForDetails.quantity || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Status:</span>
+                      <span className="text-sm font-medium">{selectedAssetForDetails.status || 'Available'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground">Location & Assignment</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Location:</span>
+                      <span className="text-sm font-medium">
+                        {locations.find(loc => loc.id === selectedAssetForDetails.location)?.name || 
+                         selectedAssetForDetails.currentLocation || 
+                         selectedAssetForDetails.location || 'Unknown'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Assigned To:</span>
+                      <span className="text-sm font-medium">{selectedAssetForDetails.assignedTo || 'Unassigned'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Vendor:</span>
+                      <span className="text-sm font-medium">
+                        {(() => {
+                          const vendor = vendors.find(v => 
+                            v.id === selectedAssetForDetails.vendorId || 
+                            v.id === Number(selectedAssetForDetails.vendor) || 
+                            v.id.toString() === selectedAssetForDetails.vendor ||
+                            v.name === selectedAssetForDetails.vendor
+                          );
+                          return vendor?.name || selectedAssetForDetails.vendor || 'N/A';
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Information */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-muted-foreground">Financial Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Purchase Price:</span>
+                      <span className="text-sm font-medium">
+                        {selectedAssetForDetails.purchasePrice 
+                          ? `$${selectedAssetForDetails.purchasePrice.toLocaleString()}` 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Purchase Date:</span>
+                      <span className="text-sm font-medium">
+                        {selectedAssetForDetails.purchaseDate 
+                          ? new Date(selectedAssetForDetails.purchaseDate).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Condition:</span>
+                      <span className="text-sm font-medium">{selectedAssetForDetails.condition || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Serial Number:</span>
+                      <span className="text-sm font-medium font-mono">
+                        {selectedAssetForDetails.serial_number || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Warranty Information */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-muted-foreground">Warranty Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Warranty Info:</span>
+                      <span className="text-sm font-medium text-right">
+                        {selectedAssetForDetails.warrantyInfo || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Warranty Expiry:</span>
+                      <span className="text-sm font-medium">
+                        {selectedAssetForDetails.warrantyExpiryDate 
+                          ? new Date(selectedAssetForDetails.warrantyExpiryDate).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Timestamps */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-muted-foreground">Record Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Created:</span>
+                      <span className="text-sm font-medium">
+                        {selectedAssetForDetails.createdAt 
+                          ? new Date(selectedAssetForDetails.createdAt).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Last Updated:</span>
+                      <span className="text-sm font-medium">
+                        {selectedAssetForDetails.updatedAt 
+                          ? new Date(selectedAssetForDetails.updatedAt).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedAssetForDetails.notes && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground">Notes</h4>
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <p className="text-sm">{selectedAssetForDetails.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button 
+                  onClick={() => navigate({ 
+                    to: '/assets/$assetCategory', 
+                    params: { assetCategory: `${selectedAssetForDetails.id}_${selectedAssetForDetails.name}` } 
+                  })}
+                  className="flex-1"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Asset Items
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDetailsDialogOpen(false)}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
