@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/table";
 
 import { assetsQueryOptions, Asset } from "@/queries/assets";
-import { AssetItem, assetItemsByAssetIdQueryOptions } from "@/queries/assetsItems";
+import { AssetItem, assetItemsByAssetIdQueryOptions, assetItemsQueryOptions } from "@/queries/assetsItems";
 import { categoriesStatsQueryOptions } from "@/queries/categories";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
@@ -80,6 +80,7 @@ export const Route = createFileRoute("/_app/assets/")({
   loader: ({ context: { queryClient } }) => {
     queryClient.ensureQueryData(categoriesStatsQueryOptions);
     queryClient.ensureQueryData(assetsQueryOptions);
+    queryClient.ensureQueryData(assetItemsQueryOptions);
     queryClient.ensureQueryData(locationQueryOptions);
     queryClient.ensureQueryData(vendorsQueryOptions);
   },
@@ -94,6 +95,7 @@ function AssetsRoute() {
   // Data queries
   const { data: categories = [] } = useSuspenseQuery(categoriesStatsQueryOptions);
   const { data: assets = [] } = useSuspenseQuery(assetsQueryOptions);
+  const { data: assetItems = [] } = useSuspenseQuery(assetItemsQueryOptions);
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
   const { data: vendors = [] } = useSuspenseQuery(vendorsQueryOptions);
 
@@ -612,13 +614,17 @@ function AssetsRoute() {
   // Statistics for summary
   const assetStats = useMemo(() => {
     const total = assets.length;
-    const categoryStats = categories.reduce((acc, category) => {
-      acc[category.name] = assets.filter(asset => asset.categoryName === category.name).length;
-      return acc;
-    }, {} as Record<string, number>);
+    
+    // Calculate status-based statistics from asset items
+    const statusStats = {
+      available: assetItems.filter(item => item.status === 'AVAILABLE' || item.status === 'Available').length,
+      assigned: assetItems.filter(item => item.status === 'ASSIGNED' || item.status === 'Assigned').length,
+      maintenance: assetItems.filter(item => item.status === 'MAINTENANCE' || item.status === 'Maintenance').length,
+      broken: assetItems.filter(item => item.status === 'BROKEN' || item.status === 'Broken').length,
+    };
 
-    return { total, categoryStats };
-  }, [assets, categories]);
+    return { total, statusStats };
+  }, [assets, assetItems]);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -646,18 +652,46 @@ function AssetsRoute() {
             </div>
           </CardContent>
         </Card>
-        {categories.slice(0, 4).map((category, index) => (
-          <Card key={category.id}>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {assetStats.categoryStats[category.name] || 0}
-                </div>
-                <div className="text-sm text-muted-foreground">{category.name}</div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {assetStats.statusStats.available}
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <div className="text-sm text-muted-foreground">Available</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-600">
+                {assetStats.statusStats.assigned}
+              </div>
+              <div className="text-sm text-muted-foreground">Assigned</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600">
+                {assetStats.statusStats.maintenance}
+              </div>
+              <div className="text-sm text-muted-foreground">Maintenance</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">
+                {assetStats.statusStats.broken}
+              </div>
+              <div className="text-sm text-muted-foreground">Broken</div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search and Filters */}
