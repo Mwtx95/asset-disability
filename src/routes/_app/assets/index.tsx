@@ -40,6 +40,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ArrowUpDown,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Edit3,
@@ -98,6 +99,7 @@ function AssetsRoute() {
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [isAddModalOpen, setIsAddModalOpen] = useState(!!addAsset);
   const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
   const [sortField, setSortField] = useState<string>("name");
@@ -170,6 +172,16 @@ function AssetsRoute() {
       newSelection.add(assetId);
     }
     setSelectedAssets(newSelection);
+  };
+
+  const handleToggleExpand = (assetId: number) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(assetId)) {
+      newExpanded.delete(assetId);
+    } else {
+      newExpanded.add(assetId);
+    }
+    setExpandedRows(newExpanded);
   };
 
   const handleSelectAll = () => {
@@ -396,6 +408,7 @@ function AssetsRoute() {
                         onCheckedChange={handleSelectAll}
                       />
                     </TableHead>
+                    <TableHead className="w-12"></TableHead> {/* Expand column */}
                     <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
                       <div className="flex items-center gap-1">
                         Asset Name
@@ -417,50 +430,126 @@ function AssetsRoute() {
                 <TableBody>
                   {paginatedAssets.length > 0 ? (
                     paginatedAssets.map((asset) => (
-                      <TableRow key={asset.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedAssets.has(asset.id)}
-                            onCheckedChange={() => handleSelectAsset(asset.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{asset.name}</TableCell>
-                        <TableCell className="text-center">{asset.quantity || 0}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {asset.categoryName}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{asset.location}</TableCell>
-                        <TableCell>{asset.vendor || 'N/A'}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Edit3 className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
+                      <>
+                        <TableRow key={asset.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedAssets.has(asset.id)}
+                              onCheckedChange={() => handleSelectAsset(asset.id)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleExpand(asset.id)}
+                              className="h-8 w-8 p-0"
+                              title="View asset details"
+                            >
+                              <ChevronDown 
+                                className={`h-4 w-4 transition-transform ${
+                                  expandedRows.has(asset.id) ? 'rotate-180' : ''
+                                }`} 
+                              />
+                            </Button>
+                          </TableCell>
+                          <TableCell className="font-medium">{asset.name}</TableCell>
+                          <TableCell className="text-center">{asset.quantity || 0}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {asset.categoryName}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{asset.location}</TableCell>
+                          <TableCell>{asset.vendor || 'N/A'}</TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  onClick={() => navigate({ 
+                                    to: '/assets/$assetCategory', 
+                                    params: { assetCategory: `${asset.id}_${asset.name}` } 
+                                  })}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Asset Items
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Edit3 className="h-4 w-4 mr-2" />
+                                  Edit Asset
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-red-600">
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Asset
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                        {expandedRows.has(asset.id) && (
+                          <TableRow>
+                            <TableCell colSpan={8} className="bg-muted/30 p-0">
+                              <div className="p-4 space-y-3">
+                                <h4 className="font-medium text-sm text-muted-foreground mb-3">
+                                  Asset Details
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                  <div className="space-y-1">
+                                    <div className="font-medium text-muted-foreground">Financial Information</div>
+                                    <div className="space-y-1">
+                                      <div className="flex justify-between">
+                                        <span>Purchase Price:</span>
+                                        <span className="font-medium">
+                                          {asset.purchasePrice ? `$${asset.purchasePrice.toLocaleString()}` : 'N/A'}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>Purchase Date:</span>
+                                        <span className="font-medium">
+                                          {asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString() : 'N/A'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="space-y-1">
+                                    <div className="font-medium text-muted-foreground">Warranty Information</div>
+                                    <div className="space-y-1">
+                                      <div className="flex justify-between">
+                                        <span>Warranty Info:</span>
+                                        <span className="font-medium">{asset.warrantyInfo || 'N/A'}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {asset.notes && (
+                                  <div className="pt-2 border-t">
+                                    <div className="font-medium text-muted-foreground text-sm mb-1">Notes:</div>
+                                    <p className="text-sm text-muted-foreground">{asset.notes}</p>
+                                  </div>
+                                )}
+                                
+                                <div className="pt-2 border-t">
+                                  <p className="text-xs text-muted-foreground">
+                                    <Eye className="h-3 w-3 inline mr-1" />
+                                    To view individual asset items, use "View Asset Items" in the actions menu
+                                  </p>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
+                      <TableCell colSpan={8} className="text-center py-8">
                         <Package className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
                         <p className="text-muted-foreground">No assets found</p>
                         <p className="text-sm text-muted-foreground/70">
@@ -498,27 +587,47 @@ function AssetsRoute() {
                         </p>
                       </div>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Edit3 className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleExpand(asset.id)}
+                        className="h-8 w-8 p-0"
+                        title="View asset details"
+                      >
+                        <ChevronDown 
+                          className={`h-4 w-4 transition-transform ${
+                            expandedRows.has(asset.id) ? 'rotate-180' : ''
+                          }`} 
+                        />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={() => navigate({ 
+                              to: '/assets/$assetCategory', 
+                              params: { assetCategory: `${asset.id}_${asset.name}` } 
+                            })}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Asset Items
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Edit3 className="h-4 w-4 mr-2" />
+                            Edit Asset
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Asset
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -540,6 +649,46 @@ function AssetsRoute() {
                       <span>{asset.vendor || 'N/A'}</span>
                     </div>
                   </div>
+
+                  {expandedRows.has(asset.id) && (
+                    <div className="pt-3 border-t space-y-3">
+                      <div className="text-sm">
+                        <div className="font-medium text-muted-foreground mb-2">Asset Details</div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Purchase Price:</span>
+                            <span className="font-medium">
+                              {asset.purchasePrice ? `$${asset.purchasePrice.toLocaleString()}` : 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Purchase Date:</span>
+                            <span className="font-medium">
+                              {asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString() : 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Warranty:</span>
+                            <span className="font-medium">{asset.warrantyInfo || 'N/A'}</span>
+                          </div>
+                        </div>
+                        
+                        {asset.notes && (
+                          <div className="pt-2 mt-2 border-t">
+                            <div className="font-medium text-muted-foreground mb-1">Notes:</div>
+                            <p className="text-muted-foreground">{asset.notes}</p>
+                          </div>
+                        )}
+                        
+                        <div className="pt-2 mt-2 border-t">
+                          <p className="text-xs text-muted-foreground">
+                            <Eye className="h-3 w-3 inline mr-1" />
+                            Use "View Asset Items" in the menu to see individual items
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))
