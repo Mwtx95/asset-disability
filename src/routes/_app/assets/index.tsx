@@ -37,7 +37,7 @@ import { AssetItem, assetItemsByAssetIdQueryOptions } from "@/queries/assetsItem
 import { categoriesStatsQueryOptions } from "@/queries/categories";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
-import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ArrowUpDown,
@@ -90,6 +90,7 @@ export const Route = createFileRoute("/_app/assets/")({
 function AssetsRoute() {
   const navigate = Route.useNavigate();
   const { addAsset, view = "table", page = 1 } = Route.useSearch();
+  const queryClient = useQueryClient();
   
   // Data queries
   const { data: categories = [] } = useSuspenseQuery(categoriesStatsQueryOptions);
@@ -124,8 +125,8 @@ function AssetsRoute() {
         asset.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (locations.find(loc => 
           loc.id === asset.location || 
-          loc.id === Number(asset.location) || 
-          loc.id.toString() === asset.location
+          loc.id === String(asset.location) || 
+          loc.name === asset.location
         )?.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (() => {
           // Comprehensive category name lookup for search
@@ -199,8 +200,8 @@ function AssetsRoute() {
         const getLocation = (asset: any) => {
           const locationName = locations.find(loc => 
             loc.id === asset.location || 
-            loc.id === Number(asset.location) || 
-            loc.id.toString() === asset.location
+            loc.id === String(asset.location) || 
+            loc.name === asset.location
           )?.name || asset.location || 'Unknown';
           return locationName;
         };
@@ -900,8 +901,8 @@ function AssetsRoute() {
                         <TableCell>
                           {locations.find(loc => 
                             loc.id === asset.location || 
-                            loc.id === Number(asset.location) || 
-                            loc.id.toString() === asset.location
+                            loc.id === String(asset.location) || 
+                            loc.name === asset.location
                           )?.name || asset.location}
                         </TableCell>
                         <TableCell>
@@ -1039,8 +1040,8 @@ function AssetsRoute() {
                       <span className="text-muted-foreground">Location:</span>
                       <span>{locations.find(loc => 
                         loc.id === asset.location || 
-                        loc.id === Number(asset.location) || 
-                        loc.id.toString() === asset.location
+                        loc.id === String(asset.location) || 
+                        loc.name === asset.location
                       )?.name || asset.location}</span>
                     </div>
                     <div className="flex items-center gap-1 text-sm">
@@ -1207,8 +1208,8 @@ function AssetsRoute() {
                       <span className="text-sm font-medium">
                         {locations.find(loc => 
                           loc.id === selectedAssetForDetails.location || 
-                          loc.id === Number(selectedAssetForDetails.location) || 
-                          loc.id.toString() === selectedAssetForDetails.location
+                          loc.id === String(selectedAssetForDetails.location) || 
+                          loc.name === selectedAssetForDetails.location
                         )?.name || 
                          selectedAssetForDetails.currentLocation || 
                          selectedAssetForDetails.location || 'Unknown'}
@@ -1359,9 +1360,9 @@ function AssetsRoute() {
                       // This is inefficient but works for demo purposes
                       // In production, you would use a more efficient lookup
                       assets.forEach(asset => {
-                        const { data: assetItems = [] } = queryClient.getQueryData(
+                        const assetItems = queryClient.getQueryData(
                           assetItemsByAssetIdQueryOptions(asset.id).queryKey
-                        ) || { data: [] };
+                        ) || [];
                         
                         const item = assetItems.find((item: any) => item.id === itemId);
                         if (item) {
