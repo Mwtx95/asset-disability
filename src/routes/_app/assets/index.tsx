@@ -31,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { assetsQueryOptions, Asset } from "@/queries/assets";
 import { AssetItem, assetItemsByAssetIdQueryOptions } from "@/queries/assetsItems";
 import { categoriesStatsQueryOptions } from "@/queries/categories";
@@ -47,8 +47,6 @@ import {
   Edit3,
   Eye,
   Filter,
-  Grid3X3,
-  List,
   MoreHorizontal,
   Package,
   PlusCircle,
@@ -75,7 +73,6 @@ const ITEMS_PER_PAGE = 10;
 export const Route = createFileRoute("/_app/assets/")({
   validateSearch: z.object({
     addAsset: z.string().optional().catch(""),
-    view: z.enum(["table", "cards"]).optional().catch("table"),
     page: z.number().optional().catch(1),
   }),
   loader: ({ context: { queryClient } }) => {
@@ -89,7 +86,7 @@ export const Route = createFileRoute("/_app/assets/")({
 
 function AssetsRoute() {
   const navigate = Route.useNavigate();
-  const { addAsset, view = "table", page = 1 } = Route.useSearch();
+  const { addAsset, page = 1 } = Route.useSearch();
   const queryClient = useQueryClient();
   
   // Data queries
@@ -413,102 +410,6 @@ function AssetsRoute() {
     );
   };
 
-  // Asset Items Card View Component
-  const AssetItemsCardView = ({ assetId }: { assetId: number }) => {
-    const { data: assetItems = [], isLoading, error } = useQuery(assetItemsByAssetIdQueryOptions(assetId));
-
-
-
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center py-4">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-          <span className="ml-2 text-sm">Loading asset items...</span>
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="text-center py-4 text-red-600 text-sm">
-          Error loading asset items
-        </div>
-      );
-    }
-
-    if (assetItems.length === 0) {
-      return (
-        <div className="text-center py-4 text-muted-foreground text-sm">
-          No asset items found for this asset
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-3">
-        <div className="space-y-2">
-          {assetItems.map((item) => (
-            <div key={item._computedId || item.serial_number} className="flex items-center justify-between p-3 bg-background rounded border">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={(() => {
-                    const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
-                    return selectedAssetItems.has(itemIdentifier);
-                  })()}
-                  onCheckedChange={() => handleSelectAssetItem(item)}
-                />
-                <Package className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">#{item.serial_number}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Badge 
-                  variant={item.status === 'AVAILABLE' ? 'default' : 
-                          item.status === 'ASSIGNED' ? 'secondary' : 
-                          item.status === 'MAINTENANCE' ? 'destructive' : 'outline'}
-                  className="text-xs"
-                >
-                  {item.status}
-                </Badge>
-                <div className="flex items-center gap-1">
-                  {item.status === 'AVAILABLE' && (
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
-                      className="h-7 px-2 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Handle assign action for available items
-                        // This will be implemented in future
-                        console.log('Assign item:', item.serial_number);
-                      }}
-                    >
-                      <Send className="h-3 w-3 mr-1" />
-                      Assign
-                    </Button>
-                  )}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-7 px-2 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Handle edit action
-                      // This will be implemented in future
-                      console.log('Edit item:', item.serial_number);
-                    }}
-                  >
-                    <Edit3 className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   // Asset Items Dropdown Component
   const AssetItemsDropdown = ({ assetId }: { assetId: number }) => {
     const { data: assetItems = [], isLoading, error } = useQuery(assetItemsByAssetIdQueryOptions(assetId));
@@ -616,10 +517,6 @@ function AssetsRoute() {
     navigate({ search: { ...Route.useSearch(), page: newPage } });
   };
 
-  const handleViewChange = (newView: "table" | "cards") => {
-    navigate({ search: { ...Route.useSearch(), view: newView, page: 1 } });
-  };
-
   const handleCloseModal = () => {
     setIsAddModalOpen(false);
     navigate({ search: { addAsset: undefined } });
@@ -645,19 +542,6 @@ function AssetsRoute() {
         </div>
         
         <div className="flex items-center gap-2">
-          <Tabs value={view} onValueChange={(value) => handleViewChange(value as "table" | "cards")}>
-            <TabsList>
-              <TabsTrigger value="table" className="flex items-center gap-1">
-                <List className="h-4 w-4" />
-                Table
-              </TabsTrigger>
-              <TabsTrigger value="cards" className="flex items-center gap-1">
-                <Grid3X3 className="h-4 w-4" />
-                Cards
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
           <Button onClick={() => setIsAddModalOpen(true)}>
             <PlusCircle className="w-4 h-4 mr-2" />
             Add Asset
@@ -816,10 +700,9 @@ function AssetsRoute() {
         </Card>
       )}
 
-      {/* Table View */}
-      {view === "table" && (
-        <Card>
-          <CardContent className="p-0">
+      {/* Assets Table */}
+      <Card>
+        <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -975,136 +858,6 @@ function AssetsRoute() {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* Cards View */}
-      {view === "cards" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {paginatedAssets.length > 0 ? (
-            paginatedAssets.map((asset) => (
-              <Card key={asset.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={selectedAssets.has(asset.id)}
-                        onCheckedChange={() => handleSelectAsset(asset.id)}
-                      />
-                      <div>
-                        <CardTitle className="text-lg">{asset.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          Quantity: {asset.quantity || 0}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleExpand(asset.id)}
-                        className="h-8 w-8 p-0"
-                        title="Expand to show asset items"
-                      >
-                        <ChevronDown 
-                          className={`h-4 w-4 transition-transform ${
-                            expandedRows.has(asset.id) ? 'rotate-180' : ''
-                          }`} 
-                        />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewDetails(asset)}
-                        className="h-8 w-8 p-0"
-                        title="View asset details"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        title="Edit asset"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline">
-                      {(() => {
-                        // More comprehensive category lookup
-                        const assetAny = asset as any;
-                        const category = categories.find(c => 
-                          c.name === asset.categoryName ||
-                          c.id === assetAny.categoryId || 
-                          c.id === Number(assetAny.category) || 
-                          c.id.toString() === assetAny.category ||
-                          c.name === assetAny.category
-                        );
-                        return category?.name || asset.categoryName || assetAny.category || 'Unknown';
-                      })()}
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1 text-sm">
-                      <Package className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Location:</span>
-                      <span>{locations.find(loc => 
-                        loc.id === asset.location || 
-                        loc.id === String(asset.location) || 
-                        loc.name === asset.location
-                      )?.name || asset.location}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-sm">
-                      <Package className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Vendor:</span>
-                      <span>
-                        {(() => {
-                          // More comprehensive vendor lookup
-                          const vendor = vendors.find(v => 
-                            v.id === asset.vendorId || 
-                            v.id === Number(asset.vendor) || 
-                            v.id.toString() === asset.vendor ||
-                            v.name === asset.vendor
-                          );
-                          return vendor?.name || asset.vendor || 'N/A';
-                        })()}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-                
-                {/* Expanded Asset Items for Cards */}
-                {expandedRows.has(asset.id) && (
-                  <CardContent className="pt-0 border-t bg-muted/30">
-                    <AssetItemsCardView assetId={asset.id} />
-                  </CardContent>
-                )}
-              </Card>
-            ))
-          ) : (
-            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-              <Package className="h-16 w-16 text-muted-foreground/40 mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground mb-2">No assets found</h3>
-              <p className="text-sm text-muted-foreground/70 mb-4">
-                {filteredAndSortedAssets.length < assets.length 
-                  ? "Try adjusting your filters or search term" 
-                  : "Start by adding your first asset"}
-              </p>
-              {filteredAndSortedAssets.length >= assets.length && (
-                <Button onClick={() => setIsAddModalOpen(true)}>
-                  <PlusCircle className="w-4 h-4 mr-2" />
-                  Add First Asset
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
