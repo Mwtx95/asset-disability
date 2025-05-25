@@ -121,7 +121,11 @@ function AssetsRoute() {
     let filtered = assets.filter((asset) => {
       const matchesSearch = searchQuery === "" || 
         asset.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (locations.find(loc => loc.id === asset.location)?.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (locations.find(loc => 
+          loc.id === asset.location || 
+          loc.id === Number(asset.location) || 
+          loc.id.toString() === asset.location
+        )?.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (() => {
           // Comprehensive category name lookup for search
           const assetAny = asset as any;
@@ -192,7 +196,11 @@ function AssetsRoute() {
       } else if (sortConfig.field === "location") {
         // Use location name lookup for sorting
         const getLocation = (asset: any) => {
-          const locationName = locations.find(loc => loc.id === asset.location)?.name || asset.location || 'Unknown';
+          const locationName = locations.find(loc => 
+            loc.id === asset.location || 
+            loc.id === Number(asset.location) || 
+            loc.id.toString() === asset.location
+          )?.name || asset.location || 'Unknown';
           return locationName;
         };
         
@@ -341,12 +349,32 @@ function AssetsRoute() {
             <TableCell colSpan={4}>
               <div className="flex items-center gap-2 justify-end">
                 {item.status === 'AVAILABLE' && (
-                  <Button variant="secondary" size="sm" className="h-8 px-3 text-xs">
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    className="h-8 px-3 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Handle assign action for available items
+                      // This will be implemented in future
+                      console.log('Assign item:', item.id);
+                    }}
+                  >
                     <Send className="h-3 w-3 mr-1" />
                     Assign
                   </Button>
                 )}
-                <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 px-3 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Handle edit action
+                    // This will be implemented in future
+                    console.log('Edit item:', item.id);
+                  }}
+                >
                   <Edit3 className="h-3 w-3 mr-1" />
                   Edit
                 </Button>
@@ -407,12 +435,32 @@ function AssetsRoute() {
                 </Badge>
                 <div className="flex items-center gap-1">
                   {item.status === 'AVAILABLE' && (
-                    <Button variant="secondary" size="sm" className="h-7 px-2 text-xs">
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      className="h-7 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle assign action for available items
+                        // This will be implemented in future
+                        console.log('Assign item:', item.id);
+                      }}
+                    >
                       <Send className="h-3 w-3 mr-1" />
                       Assign
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 px-2 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Handle edit action
+                      // This will be implemented in future
+                      console.log('Edit item:', item.id);
+                    }}
+                  >
                     <Edit3 className="h-3 w-3 mr-1" />
                     Edit
                   </Button>
@@ -488,7 +536,9 @@ function AssetsRoute() {
                       className="h-6 px-2 text-xs flex-1"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Handle assign action
+                        // Handle assign action for available items
+                        // This will be implemented in future
+                        console.log('Assign item in dropdown:', item.id);
                       }}
                     >
                       <Send className="h-3 w-3 mr-1" />
@@ -502,6 +552,8 @@ function AssetsRoute() {
                     onClick={(e) => {
                       e.stopPropagation();
                       // Handle edit action
+                      // This will be implemented in future
+                      console.log('Edit item in dropdown:', item.id);
                     }}
                   >
                     <Edit3 className="h-3 w-3 mr-1" />
@@ -770,7 +822,11 @@ function AssetsRoute() {
                       </div>
                     </TableHead>
                     <TableHead className="w-20 text-center">Details</TableHead>
-                    <TableHead className="w-20 text-center">Actions</TableHead>
+                    <TableHead className="w-20 text-center">
+                      <div className="flex items-center justify-center">
+                        Edit
+                      </div>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -817,7 +873,11 @@ function AssetsRoute() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {locations.find(loc => loc.id === asset.location)?.name || asset.location}
+                          {locations.find(loc => 
+                            loc.id === asset.location || 
+                            loc.id === Number(asset.location) || 
+                            loc.id.toString() === asset.location
+                          )?.name || asset.location}
                         </TableCell>
                         <TableCell>
                           {(() => {
@@ -842,17 +902,15 @@ function AssetsRoute() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64">
-                              <AssetItemsDropdown assetId={asset.id} />
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            title="Edit asset"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>,
                       // Expanded asset items row
@@ -921,16 +979,14 @@ function AssetsRoute() {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-64">
-                          <AssetItemsDropdown assetId={asset.id} />
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        title="Edit asset"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
@@ -956,7 +1012,11 @@ function AssetsRoute() {
                     <div className="flex items-center gap-1 text-sm">
                       <Package className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">Location:</span>
-                      <span>{locations.find(loc => loc.id === asset.location)?.name || asset.location}</span>
+                      <span>{locations.find(loc => 
+                        loc.id === asset.location || 
+                        loc.id === Number(asset.location) || 
+                        loc.id.toString() === asset.location
+                      )?.name || asset.location}</span>
                     </div>
                     <div className="flex items-center gap-1 text-sm">
                       <Package className="h-4 w-4 text-muted-foreground" />
@@ -1115,19 +1175,19 @@ function AssetsRoute() {
                 </div>
 
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-muted-foreground">Location & Assignment</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">Location & Vendor</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Location:</span>
                       <span className="text-sm font-medium">
-                        {locations.find(loc => loc.id === selectedAssetForDetails.location)?.name || 
+                        {locations.find(loc => 
+                          loc.id === selectedAssetForDetails.location || 
+                          loc.id === Number(selectedAssetForDetails.location) || 
+                          loc.id.toString() === selectedAssetForDetails.location
+                        )?.name || 
                          selectedAssetForDetails.currentLocation || 
                          selectedAssetForDetails.location || 'Unknown'}
                       </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Assigned To:</span>
-                      <span className="text-sm font-medium">{selectedAssetForDetails.assignedTo || 'Unassigned'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Vendor:</span>
@@ -1169,45 +1229,10 @@ function AssetsRoute() {
                       </span>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Condition:</span>
-                      <span className="text-sm font-medium">{selectedAssetForDetails.condition || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Serial Number:</span>
-                      <span className="text-sm font-medium font-mono">
-                        {selectedAssetForDetails.serial_number || 'N/A'}
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
 
-              {/* Warranty Information */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-muted-foreground">Warranty Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Warranty Info:</span>
-                      <span className="text-sm font-medium text-right">
-                        {selectedAssetForDetails.warrantyInfo || 'N/A'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Warranty Expiry:</span>
-                      <span className="text-sm font-medium">
-                        {selectedAssetForDetails.warrantyExpiryDate 
-                          ? new Date(selectedAssetForDetails.warrantyExpiryDate).toLocaleDateString() 
-                          : 'N/A'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+
 
               {/* Timestamps */}
               <div className="space-y-3">
@@ -1248,16 +1273,6 @@ function AssetsRoute() {
 
               {/* Actions */}
               <div className="flex gap-2 pt-4 border-t">
-                <Button 
-                  onClick={() => navigate({ 
-                    to: '/assets/$assetCategory', 
-                    params: { assetCategory: `${selectedAssetForDetails.id}_${selectedAssetForDetails.name}` } 
-                  })}
-                  className="flex-1"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Asset Items
-                </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => setIsDetailsDialogOpen(false)}
