@@ -93,7 +93,6 @@ function AssetsRoute() {
   // Data queries
   const { data: categories = [] } = useSuspenseQuery(categoriesStatsQueryOptions);
   const { data: assets = [] } = useSuspenseQuery(assetsQueryOptions);
-  console.log('Assets data:', assets);
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
   const { data: vendors = [] } = useSuspenseQuery(vendorsQueryOptions);
 
@@ -117,12 +116,48 @@ function AssetsRoute() {
     let filtered = assets.filter((asset) => {
       const matchesSearch = searchQuery === "" || 
         asset.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.categoryName?.toLowerCase().includes(searchQuery.toLowerCase());
+        (locations.find(loc => loc.id === asset.location)?.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (() => {
+          // Comprehensive category name lookup for search
+          const assetAny = asset as any;
+          const category = categories.find(c => 
+            c.name === asset.categoryName ||
+            c.id === assetAny.categoryId || 
+            c.id === Number(assetAny.category) || 
+            c.id.toString() === assetAny.category ||
+            c.name === assetAny.category
+          );
+          const categoryName = category?.name || asset.categoryName || assetAny.category || '';
+          return categoryName.toLowerCase().includes(searchQuery.toLowerCase());
+        })() ||
+        (() => {
+          const vendor = vendors.find(v => 
+            v.id === asset.vendorId || 
+            v.id === Number(asset.vendor) || 
+            v.id.toString() === asset.vendor ||
+            v.name === asset.vendor
+          );
+          const vendorName = vendor?.name || asset.vendor || '';
+          return vendorName.toLowerCase().includes(searchQuery.toLowerCase());
+        })();
       
       const matchesLocation = filters.location === "all" || asset.location === filters.location;
-      const matchesCategory = filters.category === "all" || asset.categoryName === filters.category;
-      const matchesVendor = filters.vendor === "all" || asset.vendor === filters.vendor;
+      const matchesCategory = filters.category === "all" || (() => {
+        // More comprehensive category matching for filtering
+        const assetAny = asset as any;
+        const category = categories.find(c => 
+          c.name === asset.categoryName ||
+          c.id === assetAny.categoryId || 
+          c.id === Number(assetAny.category) || 
+          c.id.toString() === assetAny.category ||
+          c.name === assetAny.category
+        );
+        return category?.name === filters.category;
+      })();
+      const matchesVendor = filters.vendor === "all" || 
+        (asset.vendorId && asset.vendorId.toString() === filters.vendor) ||
+        (asset.vendor && asset.vendor === filters.vendor) ||
+        (asset.vendor && Number(asset.vendor).toString() === filters.vendor);
       
       return matchesSearch && matchesLocation && matchesCategory && matchesVendor;
     });
@@ -223,9 +258,6 @@ function AssetsRoute() {
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Asset Management</h1>
-          <p className="text-muted-foreground">
-            Manage and track all your assets ({filteredAndSortedAssets.length} of {assets.length} total)
-          </p>
         </div>
         
         <div className="flex items-center gap-2">
@@ -320,7 +352,7 @@ function AssetsRoute() {
               <SelectContent>
                 <SelectItem value="all">All Locations</SelectItem>
                 {locations.map((location) => (
-                  <SelectItem key={location.id} value={location.name}>
+                  <SelectItem key={location.id} value={location.id}>
                     {location.name}
                   </SelectItem>
                 ))}
@@ -337,7 +369,7 @@ function AssetsRoute() {
               <SelectContent>
                 <SelectItem value="all">All Vendors</SelectItem>
                 {vendors.map((vendor) => (
-                  <SelectItem key={vendor.id} value={vendor.name}>
+                  <SelectItem key={vendor.id} value={vendor.id.toString()}>
                     {vendor.name}
                   </SelectItem>
                 ))}
@@ -458,11 +490,35 @@ function AssetsRoute() {
                           <TableCell className="text-center">{asset.quantity || 0}</TableCell>
                           <TableCell>
                             <Badge variant="outline">
-                              {asset.categoryName}
+                              {(() => {
+                                // More comprehensive category lookup
+                                const assetAny = asset as any;
+                                const category = categories.find(c => 
+                                  c.name === asset.categoryName ||
+                                  c.id === assetAny.categoryId || 
+                                  c.id === Number(assetAny.category) || 
+                                  c.id.toString() === assetAny.category ||
+                                  c.name === assetAny.category
+                                );
+                                return category?.name || asset.categoryName || assetAny.category || 'Unknown';
+                              })()}
                             </Badge>
                           </TableCell>
-                          <TableCell>{asset.location}</TableCell>
-                          <TableCell>{asset.vendor || 'N/A'}</TableCell>
+                          <TableCell>
+                            {locations.find(loc => loc.id === asset.location)?.name || asset.location}
+                          </TableCell>
+                          <TableCell>
+                            {(() => {
+                              // More comprehensive vendor lookup
+                              const vendor = vendors.find(v => 
+                                v.id === asset.vendorId || 
+                                v.id === Number(asset.vendor) || 
+                                v.id.toString() === asset.vendor ||
+                                v.name === asset.vendor
+                              );
+                              return vendor?.name || asset.vendor || 'N/A';
+                            })()}
+                          </TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -637,7 +693,18 @@ function AssetsRoute() {
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Badge variant="outline">
-                      {asset.categoryName}
+                      {(() => {
+                        // More comprehensive category lookup
+                        const assetAny = asset as any;
+                        const category = categories.find(c => 
+                          c.name === asset.categoryName ||
+                          c.id === assetAny.categoryId || 
+                          c.id === Number(assetAny.category) || 
+                          c.id.toString() === assetAny.category ||
+                          c.name === assetAny.category
+                        );
+                        return category?.name || asset.categoryName || assetAny.category || 'Unknown';
+                      })()}
                     </Badge>
                   </div>
                   
@@ -645,12 +712,23 @@ function AssetsRoute() {
                     <div className="flex items-center gap-1 text-sm">
                       <Package className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">Location:</span>
-                      <span>{asset.location}</span>
+                      <span>{locations.find(loc => loc.id === asset.location)?.name || asset.location}</span>
                     </div>
                     <div className="flex items-center gap-1 text-sm">
                       <Package className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">Vendor:</span>
-                      <span>{asset.vendor || 'N/A'}</span>
+                      <span>
+                        {(() => {
+                          // More comprehensive vendor lookup
+                          const vendor = vendors.find(v => 
+                            v.id === asset.vendorId || 
+                            v.id === Number(asset.vendor) || 
+                            v.id.toString() === asset.vendor ||
+                            v.name === asset.vendor
+                          );
+                          return vendor?.name || asset.vendor || 'N/A';
+                        })()}
+                      </span>
                     </div>
                   </div>
 
