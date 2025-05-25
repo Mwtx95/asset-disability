@@ -100,6 +100,7 @@ function AssetsRoute() {
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(new Set());
+  const [selectedAssetItems, setSelectedAssetItems] = useState<Set<number>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [isAddModalOpen, setIsAddModalOpen] = useState(!!addAsset);
   const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
@@ -273,6 +274,16 @@ function AssetsRoute() {
     setSelectedAssets(newSelection);
   };
 
+  const handleSelectAssetItem = (itemId: number) => {
+    const newSelection = new Set(selectedAssetItems);
+    if (newSelection.has(itemId)) {
+      newSelection.delete(itemId);
+    } else {
+      newSelection.add(itemId);
+    }
+    setSelectedAssetItems(newSelection);
+  };
+
   const handleToggleExpand = (assetId: number) => {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(assetId)) {
@@ -330,7 +341,12 @@ function AssetsRoute() {
         {assetItems.map((item) => (
           <TableRow key={item.id} className="bg-muted/30">
             <TableCell></TableCell> {/* Empty expand cell */}
-            <TableCell></TableCell> {/* Empty checkbox cell */}
+            <TableCell>
+              <Checkbox
+                checked={selectedAssetItems.has(item.id)}
+                onCheckedChange={() => handleSelectAssetItem(item.id)}
+              />
+            </TableCell>
             <TableCell colSpan={3} className="pl-8 text-sm">
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-muted-foreground" />
@@ -421,6 +437,10 @@ function AssetsRoute() {
           {assetItems.map((item) => (
             <div key={item.id} className="flex items-center justify-between p-3 bg-background rounded border">
               <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={selectedAssetItems.has(item.id)}
+                  onCheckedChange={() => handleSelectAssetItem(item.id)}
+                />
                 <Package className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">#{item.serial_number}</span>
               </div>
@@ -735,14 +755,26 @@ function AssetsRoute() {
       </Card>
 
       {/* Bulk Actions */}
-      {selectedAssets.size > 0 && (
+      {(selectedAssets.size > 0 || selectedAssetItems.size > 0) && (
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium">
-                {selectedAssets.size} asset(s) selected
-              </span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium">
+                  {selectedAssets.size > 0 
+                    ? `${selectedAssets.size} asset(s) selected` 
+                    : ''}
+                </span>
+              </div>
+              {selectedAssetItems.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-blue-600">
+                    {selectedAssetItems.size} item(s) selected
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -756,7 +788,10 @@ function AssetsRoute() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setSelectedAssets(new Set())}
+                onClick={() => {
+                  setSelectedAssets(new Set());
+                  setSelectedAssetItems(new Set());
+                }}
               >
                 Clear Selection
               </Button>
@@ -1291,82 +1326,130 @@ function AssetsRoute() {
       <Dialog open={isIssueDialogOpen} onOpenChange={setIsIssueDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Issue Selected Assets</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-2">
-                Selected Assets ({selectedAssets.size}):
-              </p>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {paginatedAssets
-                  .filter(asset => selectedAssets.has(asset.id))
-                  .map(asset => (
-                    <div key={asset.id} className="text-sm">
-                      {asset.name} (Qty: {asset.quantity || 0})
-                    </div>
-                  ))}
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium">Issue Type</label>
-                <Select defaultValue="assign">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="assign">Assign to User</SelectItem>
-                    <SelectItem value="transfer">Transfer to Location</SelectItem>
-                    <SelectItem value="maintenance">Send to Maintenance</SelectItem>
-                  </SelectContent>
-                </Select>
+            <DialogTitle>Transfer Assets</DialogTitle>
+          </DialogHeader>            <div className="space-y-4">
+              {selectedAssets.size > 0 && (
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">
+                    Selected Assets ({selectedAssets.size}):
+                  </p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {paginatedAssets
+                      .filter(asset => selectedAssets.has(asset.id))
+                      .map(asset => (
+                        <div key={asset.id} className="text-sm">
+                          {asset.name} (Qty: {asset.quantity || 0})
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+              
+              {selectedAssetItems.size > 0 && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+                    Selected Asset Items ({selectedAssetItems.size}):
+                  </p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {Array.from(selectedAssetItems).map(itemId => {
+                      // Find the item across all expanded assets
+                      let foundItem: any = null;
+                      let assetName = '';
+                      
+                      // This is inefficient but works for demo purposes
+                      // In production, you would use a more efficient lookup
+                      assets.forEach(asset => {
+                        const { data: assetItems = [] } = queryClient.getQueryData(
+                          assetItemsByAssetIdQueryOptions(asset.id).queryKey
+                        ) || { data: [] };
+                        
+                        const item = assetItems.find((item: any) => item.id === itemId);
+                        if (item) {
+                          foundItem = item;
+                          assetName = asset.name;
+                        }
+                      });
+                      
+                      return foundItem ? (
+                        <div key={itemId} className="text-sm flex items-center justify-between">
+                          <span>
+                            #{foundItem.serial_number} ({assetName})
+                          </span>
+                          <Badge 
+                            variant={foundItem.status === 'AVAILABLE' ? 'default' : 
+                                  foundItem.status === 'ASSIGNED' ? 'secondary' : 
+                                  foundItem.status === 'MAINTENANCE' ? 'destructive' : 'outline'}
+                            className="text-xs"
+                          >
+                            {foundItem.status}
+                          </Badge>
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium">Transfer Type</label>
+                  <Select defaultValue="transfer">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="assign">Assign to User</SelectItem>
+                      <SelectItem value="transfer">Transfer to Location</SelectItem>
+                      <SelectItem value="maintenance">Send to Maintenance</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Destination</label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select destination..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((location) => (
+                        <SelectItem key={location.id} value={location.id.toString()}>
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Notes (Optional)</label>
+                  <Input placeholder="Add notes for this transaction..." />
+                </div>
               </div>
               
-              <div>
-                <label className="text-sm font-medium">Destination</label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select destination..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map((location) => (
-                      <SelectItem key={location.id} value={location.id.toString()}>
-                        {location.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium">Notes (Optional)</label>
-                <Input placeholder="Add notes for this transaction..." />
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  className="flex-1"
+                  onClick={() => {
+                    // Handle asset transfer
+                    console.log('Transferring assets:', Array.from(selectedAssets));
+                    console.log('Transferring asset items:', Array.from(selectedAssetItems));
+                    setIsIssueDialogOpen(false);
+                    setSelectedAssets(new Set());
+                    setSelectedAssetItems(new Set());
+                  }}
+                >
+                  Transfer
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setIsIssueDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
               </div>
             </div>
-            
-            <div className="flex gap-2 pt-4">
-              <Button 
-                className="flex-1"
-                onClick={() => {
-                  // Handle asset issuance
-                  console.log('Issuing assets:', Array.from(selectedAssets));
-                  setIsIssueDialogOpen(false);
-                  setSelectedAssets(new Set());
-                }}
-              >
-                Issue Assets
-              </Button>
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => setIsIssueDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
         </DialogContent>
       </Dialog>
     </div>
