@@ -751,17 +751,7 @@ function AssetsRoute() {
                 className="flex items-center gap-1"
               >
                 <Send className="h-4 w-4" />
-                Issue Assets
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  // Bulk status update functionality could be added here
-                  console.log('Bulk update status for:', Array.from(selectedAssets));
-                }}
-              >
-                Update Status
+                Transfer
               </Button>
               <Button
                 size="sm"
@@ -1288,6 +1278,7 @@ function AssetsRoute() {
                   onClick={() => setIsDetailsDialogOpen(false)}
                   className="flex-1"
                 >
+                  Close
                   Close
                 </Button>
               </div>
