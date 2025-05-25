@@ -18,6 +18,9 @@ export interface Asset {
   location: string;
   createdAt: string;
   updatedAt: null;
+  quantity?: number;
+  vendor?: string;
+  vendorId?: number;
   serial_number?: string;
   purchaseDate?: string;
   purchasePrice?: number;

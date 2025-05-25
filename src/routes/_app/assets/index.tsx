@@ -32,7 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { assetItemsQueryOptions } from "@/queries/assetsItems";
+import { assetsQueryOptions } from "@/queries/assets";
 import { categoriesStatsQueryOptions } from "@/queries/categories";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
@@ -58,7 +58,6 @@ import { useState, useMemo } from "react";
 import { z } from "zod";
 
 interface AssetFilters {
-  status: string;
   category: string;
   location: string;
   vendor: string;
@@ -79,7 +78,7 @@ export const Route = createFileRoute("/_app/assets/")({
   }),
   loader: ({ context: { queryClient } }) => {
     queryClient.ensureQueryData(categoriesStatsQueryOptions);
-    queryClient.ensureQueryData(assetItemsQueryOptions);
+    queryClient.ensureQueryData(assetsQueryOptions);
     queryClient.ensureQueryData(locationQueryOptions);
     queryClient.ensureQueryData(vendorsQueryOptions);
   },
@@ -92,7 +91,7 @@ function AssetsRoute() {
   
   // Data queries
   const { data: categories = [] } = useSuspenseQuery(categoriesStatsQueryOptions);
-  const { data: assetItems = [] } = useSuspenseQuery(assetItemsQueryOptions);
+  const { data: assets = [] } = useSuspenseQuery(assetsQueryOptions);
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
   const { data: vendors = [] } = useSuspenseQuery(vendorsQueryOptions);
 
@@ -101,11 +100,10 @@ function AssetsRoute() {
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(new Set());
   const [isAddModalOpen, setIsAddModalOpen] = useState(!!addAsset);
   const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
-  const [sortField, setSortField] = useState<string>("asset_name");
+  const [sortField, setSortField] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   
   const [filters, setFilters] = useState<AssetFilters>({
-    status: "all",
     category: "all",
     location: "all",
     vendor: "all",
@@ -113,18 +111,17 @@ function AssetsRoute() {
 
   // Filtered and sorted data
   const filteredAndSortedAssets = useMemo(() => {
-    let filtered = assetItems.filter((asset) => {
+    let filtered = assets.filter((asset) => {
       const matchesSearch = searchQuery === "" || 
-        asset.asset_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.serial_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.location_name?.toLowerCase().includes(searchQuery.toLowerCase());
+        asset.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        asset.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        asset.categoryName?.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesStatus = filters.status === "all" || asset.status === filters.status;
-      const matchesLocation = filters.location === "all" || asset.locationId.toString() === filters.location;
-      const matchesVendor = filters.vendor === "all" || asset.vendorId.toString() === filters.vendor;
-      const matchesCategory = filters.category === "all" || asset.assetId.toString() === filters.category;
+      const matchesLocation = filters.location === "all" || asset.location === filters.location;
+      const matchesCategory = filters.category === "all" || asset.categoryName === filters.category;
+      const matchesVendor = filters.vendor === "all" || asset.vendor === filters.vendor;
       
-      return matchesSearch && matchesStatus && matchesLocation && matchesVendor && matchesCategory;
+      return matchesSearch && matchesLocation && matchesCategory && matchesVendor;
     });
 
     // Sort data
@@ -148,7 +145,7 @@ function AssetsRoute() {
     });
 
     return filtered;
-  }, [assetItems, searchQuery, filters, sortField, sortDirection]);
+  }, [assets, searchQuery, filters, sortField, sortDirection]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedAssets.length / ITEMS_PER_PAGE);
@@ -196,47 +193,16 @@ function AssetsRoute() {
     navigate({ search: { addAsset: undefined } });
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      AVAILABLE: { 
-        variant: "default" as const, 
-        color: "text-green-700", 
-        bg: "bg-green-50 border-green-200",
-        label: "Available"
-      },
-      ASSIGNED: { 
-        variant: "secondary" as const, 
-        color: "text-blue-700", 
-        bg: "bg-blue-50 border-blue-200",
-        label: "Assigned"
-      },
-      MAINTENANCE: { 
-        variant: "outline" as const, 
-        color: "text-orange-700", 
-        bg: "bg-orange-50 border-orange-200",
-        label: "Maintenance"
-      },
-      BROKEN: { 
-        variant: "destructive" as const, 
-        color: "text-red-700", 
-        bg: "bg-red-50 border-red-200",
-        label: "Broken"
-      },
-    };
-    
-    return statusConfig[status as keyof typeof statusConfig] || statusConfig.AVAILABLE;
-  };
-
   // Statistics for summary
   const assetStats = useMemo(() => {
-    const total = assetItems.length;
-    const available = assetItems.filter(item => item.status === 'AVAILABLE').length;
-    const assigned = assetItems.filter(item => item.status === 'ASSIGNED').length;
-    const maintenance = assetItems.filter(item => item.status === 'MAINTENANCE').length;
-    const broken = assetItems.filter(item => item.status === 'BROKEN').length;
+    const total = assets.length;
+    const categoryStats = categories.reduce((acc, category) => {
+      acc[category.name] = assets.filter(asset => asset.categoryName === category.name).length;
+      return acc;
+    }, {} as Record<string, number>);
 
-    return { total, available, assigned, maintenance, broken };
-  }, [assetItems]);
+    return { total, categoryStats };
+  }, [assets, categories]);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -245,7 +211,7 @@ function AssetsRoute() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Asset Management</h1>
           <p className="text-muted-foreground">
-            Manage and track all your assets ({filteredAndSortedAssets.length} of {assetItems.length} total)
+            Manage and track all your assets ({filteredAndSortedAssets.length} of {assets.length} total)
           </p>
         </div>
         
@@ -280,38 +246,18 @@ function AssetsRoute() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{assetStats.available}</div>
-              <div className="text-sm text-muted-foreground">Available</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{assetStats.assigned}</div>
-              <div className="text-sm text-muted-foreground">Assigned</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{assetStats.maintenance}</div>
-              <div className="text-sm text-muted-foreground">Maintenance</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{assetStats.broken}</div>
-              <div className="text-sm text-muted-foreground">Broken</div>
-            </div>
-          </CardContent>
-        </Card>
+        {categories.slice(0, 4).map((category, index) => (
+          <Card key={category.id}>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {assetStats.categoryStats[category.name] || 0}
+                </div>
+                <div className="text-sm text-muted-foreground">{category.name}</div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Search and Filters */}
@@ -323,7 +269,7 @@ function AssetsRoute() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -333,22 +279,6 @@ function AssetsRoute() {
                 className="pl-10"
               />
             </div>
-            
-            <Select
-              value={filters.status}
-              onValueChange={(value) => setFilters({ ...filters, status: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="AVAILABLE">Available</SelectItem>
-                <SelectItem value="ASSIGNED">Assigned</SelectItem>
-                <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                <SelectItem value="BROKEN">Broken</SelectItem>
-              </SelectContent>
-            </Select>
 
             <Select
               value={filters.category}
@@ -360,7 +290,7 @@ function AssetsRoute() {
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id.toString()}>
+                  <SelectItem key={category.id} value={category.name}>
                     {category.name}
                   </SelectItem>
                 ))}
@@ -377,7 +307,7 @@ function AssetsRoute() {
               <SelectContent>
                 <SelectItem value="all">All Locations</SelectItem>
                 {locations.map((location) => (
-                  <SelectItem key={location.id} value={location.id.toString()}>
+                  <SelectItem key={location.id} value={location.name}>
                     {location.name}
                   </SelectItem>
                 ))}
@@ -394,7 +324,7 @@ function AssetsRoute() {
               <SelectContent>
                 <SelectItem value="all">All Vendors</SelectItem>
                 {vendors.map((vendor) => (
-                  <SelectItem key={vendor.id} value={vendor.id.toString()}>
+                  <SelectItem key={vendor.id} value={vendor.name}>
                     {vendor.name}
                   </SelectItem>
                 ))}
@@ -403,7 +333,7 @@ function AssetsRoute() {
 
             <Button 
               variant="outline" 
-              onClick={() => setFilters({ status: "all", category: "all", location: "all", vendor: "all" })}
+              onClick={() => setFilters({ category: "all", location: "all", vendor: "all" })}
             >
               Clear Filters
             </Button>
@@ -466,22 +396,21 @@ function AssetsRoute() {
                         onCheckedChange={handleSelectAll}
                       />
                     </TableHead>
-                    <TableHead className="cursor-pointer" onClick={() => handleSort("asset_name")}>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
                       <div className="flex items-center gap-1">
                         Asset Name
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>
-                    <TableHead>Serial Number</TableHead>
-                    <TableHead className="cursor-pointer" onClick={() => handleSort("status")}>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("categoryName")}>
                       <div className="flex items-center gap-1">
-                        Status
+                        Category
                         <ArrowUpDown className="h-4 w-4" />
                       </div>
                     </TableHead>
                     <TableHead>Location</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Purchase Date</TableHead>
+                    <TableHead>Vendor</TableHead>
                     <TableHead className="w-12">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -495,21 +424,15 @@ function AssetsRoute() {
                             onCheckedChange={() => handleSelectAsset(asset.id)}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">{asset.asset_name}</TableCell>
-                        <TableCell className="font-mono text-sm">{asset.serial_number}</TableCell>
+                        <TableCell className="font-medium">{asset.name}</TableCell>
+                        <TableCell className="text-center">{asset.quantity || 0}</TableCell>
                         <TableCell>
-                          <Badge 
-                            variant={getStatusBadge(asset.status).variant}
-                            className={`${getStatusBadge(asset.status).bg} ${getStatusBadge(asset.status).color}`}
-                          >
-                            {getStatusBadge(asset.status).label}
+                          <Badge variant="outline">
+                            {asset.categoryName}
                           </Badge>
                         </TableCell>
-                        <TableCell>{asset.location_name}</TableCell>
-                        <TableCell>${asset.price?.toFixed(2) || 'N/A'}</TableCell>
-                        <TableCell>
-                          {asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString() : 'N/A'}
-                        </TableCell>
+                        <TableCell>{asset.location}</TableCell>
+                        <TableCell>{asset.vendor || 'N/A'}</TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -537,11 +460,11 @@ function AssetsRoute() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">
+                      <TableCell colSpan={7} className="text-center py-8">
                         <Package className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
                         <p className="text-muted-foreground">No assets found</p>
                         <p className="text-sm text-muted-foreground/70">
-                          {filteredAndSortedAssets.length < assetItems.length 
+                          {filteredAndSortedAssets.length < assets.length 
                             ? "Try adjusting your filters" 
                             : "Start by adding your first asset"}
                         </p>
@@ -569,9 +492,9 @@ function AssetsRoute() {
                         onCheckedChange={() => handleSelectAsset(asset.id)}
                       />
                       <div>
-                        <CardTitle className="text-lg">{asset.asset_name}</CardTitle>
-                        <p className="text-sm text-muted-foreground font-mono">
-                          {asset.serial_number}
+                        <CardTitle className="text-lg">{asset.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          Quantity: {asset.quantity || 0}
                         </p>
                       </div>
                     </div>
@@ -600,29 +523,21 @@ function AssetsRoute() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Badge 
-                      variant={getStatusBadge(asset.status).variant}
-                      className={`${getStatusBadge(asset.status).bg} ${getStatusBadge(asset.status).color}`}
-                    >
-                      {getStatusBadge(asset.status).label}
+                    <Badge variant="outline">
+                      {asset.categoryName}
                     </Badge>
-                    <span className="text-sm font-semibold">
-                      ${asset.price?.toFixed(2) || 'N/A'}
-                    </span>
                   </div>
                   
                   <div className="space-y-1">
                     <div className="flex items-center gap-1 text-sm">
                       <Package className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">Location:</span>
-                      <span>{asset.location_name}</span>
+                      <span>{asset.location}</span>
                     </div>
-                    
                     <div className="flex items-center gap-1 text-sm">
-                      <span className="text-muted-foreground">Purchased:</span>
-                      <span>
-                        {asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString() : 'N/A'}
-                      </span>
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Vendor:</span>
+                      <span>{asset.vendor || 'N/A'}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -633,11 +548,11 @@ function AssetsRoute() {
               <Package className="h-16 w-16 text-muted-foreground/40 mb-4" />
               <h3 className="text-lg font-medium text-muted-foreground mb-2">No assets found</h3>
               <p className="text-sm text-muted-foreground/70 mb-4">
-                {filteredAndSortedAssets.length < assetItems.length 
+                {filteredAndSortedAssets.length < assets.length 
                   ? "Try adjusting your filters or search term" 
                   : "Start by adding your first asset"}
               </p>
-              {filteredAndSortedAssets.length >= assetItems.length && (
+              {filteredAndSortedAssets.length >= assets.length && (
                 <Button onClick={() => setIsAddModalOpen(true)}>
                   <PlusCircle className="w-4 h-4 mr-2" />
                   Add First Asset
@@ -723,7 +638,7 @@ function AssetsRoute() {
                   .filter(asset => selectedAssets.has(asset.id))
                   .map(asset => (
                     <div key={asset.id} className="text-sm">
-                      {asset.asset_name} ({asset.serial_number})
+                      {asset.name} (Qty: {asset.quantity || 0})
                     </div>
                   ))}
               </div>
