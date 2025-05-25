@@ -1,4 +1,5 @@
 import { AddAssetForm } from "@/components/assets/add-asset-form";
+import { EditAssetForm } from "@/components/assets/edit-asset-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,6 +105,8 @@ function AssetsRoute() {
   const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
   const [selectedAssetForDetails, setSelectedAssetForDetails] = useState<Asset | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedAssetForEdit, setSelectedAssetForEdit] = useState<Asset | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{field: string, direction: "asc" | "desc"}>({
     field: "name",
     direction: "asc"
@@ -357,6 +360,11 @@ function AssetsRoute() {
   const handleViewDetails = (asset: Asset) => {
     setSelectedAssetForDetails(asset);
     setIsDetailsDialogOpen(true);
+  };
+
+  const handleEditAsset = (asset: Asset) => {
+    setSelectedAssetForEdit(asset);
+    setIsEditDialogOpen(true);
   };
 
   // Asset Items Row Component
@@ -905,6 +913,7 @@ function AssetsRoute() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => handleEditAsset(asset)}
                             className="h-8 w-8 p-0"
                             title="Edit asset"
                           >
@@ -990,6 +999,24 @@ function AssetsRoute() {
             <DialogTitle>Add New Asset</DialogTitle>
           </DialogHeader>
           <AddAssetForm onSuccess={handleCloseModal} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Asset Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Asset</DialogTitle>
+          </DialogHeader>
+          {selectedAssetForEdit && (
+            <EditAssetForm 
+              asset={selectedAssetForEdit} 
+              onSuccess={() => {
+                setIsEditDialogOpen(false);
+                setSelectedAssetForEdit(null);
+              }} 
+            />
+          )}
         </DialogContent>
       </Dialog>
 
