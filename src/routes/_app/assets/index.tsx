@@ -101,7 +101,7 @@ function AssetsRoute() {
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(new Set());
-  const [selectedAssetItems, setSelectedAssetItems] = useState<Set<number>>(new Set());
+  const [selectedAssetItems, setSelectedAssetItems] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [isAddModalOpen, setIsAddModalOpen] = useState(!!addAsset);
   const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
@@ -275,13 +275,33 @@ function AssetsRoute() {
     setSelectedAssets(newSelection);
   };
 
-  const handleSelectAssetItem = (itemId: number) => {
+  const handleSelectAssetItem = (item: AssetItem) => {
+    // Use computed ID or serial number as fallback for identification
+    const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
+    
+    console.log('🔍 handleSelectAssetItem called:', { 
+      item,
+      itemIdentifier,
+      currentSelection: Array.from(selectedAssetItems) 
+    });
+    
     const newSelection = new Set(selectedAssetItems);
-    if (newSelection.has(itemId)) {
-      newSelection.delete(itemId);
+    const wasSelected = newSelection.has(itemIdentifier);
+    
+    if (wasSelected) {
+      console.log('❌ Removing item:', itemIdentifier);
+      newSelection.delete(itemIdentifier);
     } else {
-      newSelection.add(itemId);
+      console.log('✅ Adding item:', itemIdentifier);
+      newSelection.add(itemIdentifier);
     }
+    
+    console.log('📊 Selection state change:', { 
+      wasSelected,
+      newSelection: Array.from(newSelection),
+      selectionSize: newSelection.size
+    });
+    
     setSelectedAssetItems(newSelection);
   };
 
@@ -303,6 +323,16 @@ function AssetsRoute() {
   // Asset Items Row Component
   const AssetItemsRow = ({ assetId }: { assetId: number }) => {
     const { data: assetItems = [], isLoading, error } = useQuery(assetItemsByAssetIdQueryOptions(assetId));
+
+    // Add debug logging to see the actual structure of asset items
+    console.log('🔍 AssetItemsRow debug:', {
+      assetId,
+      assetItems,
+      firstItem: assetItems[0],
+      firstItemKeys: assetItems[0] ? Object.keys(assetItems[0]) : [],
+      isLoading,
+      error
+    });
 
     if (isLoading) {
       return (
@@ -340,12 +370,22 @@ function AssetsRoute() {
     return (
       <>
         {assetItems.map((item) => (
-          <TableRow key={item.id} className="bg-muted/30">
+          <TableRow key={item._computedId || item.serial_number} className="bg-muted/30">
             <TableCell></TableCell> {/* Empty expand cell */}
             <TableCell>
               <Checkbox
-                checked={selectedAssetItems.has(item.id)}
-                onCheckedChange={() => handleSelectAssetItem(item.id)}
+                checked={(() => {
+                  const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
+                  const isChecked = selectedAssetItems.has(itemIdentifier);
+                  console.log(`🔘 AssetItemsRow checkbox for item ${item.serial_number}:`, { 
+                    item,
+                    itemIdentifier,
+                    isChecked,
+                    serialNumber: item.serial_number
+                  });
+                  return isChecked;
+                })()}
+                onCheckedChange={() => handleSelectAssetItem(item)}
               />
             </TableCell>
             <TableCell colSpan={3} className="pl-8 text-sm">
@@ -374,7 +414,7 @@ function AssetsRoute() {
                       e.stopPropagation();
                       // Handle assign action for available items
                       // This will be implemented in future
-                      console.log('Assign item:', item.id);
+                      console.log('Assign item:', item.serial_number);
                     }}
                   >
                     <Send className="h-3 w-3 mr-1" />
@@ -389,7 +429,7 @@ function AssetsRoute() {
                     e.stopPropagation();
                     // Handle edit action
                     // This will be implemented in future
-                    console.log('Edit item:', item.id);
+                    console.log('Edit item:', item.serial_number);
                   }}
                 >
                   <Edit3 className="h-3 w-3 mr-1" />
@@ -406,6 +446,16 @@ function AssetsRoute() {
   // Asset Items Card View Component
   const AssetItemsCardView = ({ assetId }: { assetId: number }) => {
     const { data: assetItems = [], isLoading, error } = useQuery(assetItemsByAssetIdQueryOptions(assetId));
+
+    // Add debug logging to see the actual structure of asset items
+    console.log('🔍 AssetItemsCardView debug:', {
+      assetId,
+      assetItems,
+      firstItem: assetItems[0],
+      firstItemKeys: assetItems[0] ? Object.keys(assetItems[0]) : [],
+      isLoading,
+      error
+    });
 
     if (isLoading) {
       return (
@@ -436,11 +486,21 @@ function AssetsRoute() {
       <div className="space-y-3">
         <div className="space-y-2">
           {assetItems.map((item) => (
-            <div key={item.id} className="flex items-center justify-between p-3 bg-background rounded border">
+            <div key={item._computedId || item.serial_number} className="flex items-center justify-between p-3 bg-background rounded border">
               <div className="flex items-center gap-2">
                 <Checkbox
-                  checked={selectedAssetItems.has(item.id)}
-                  onCheckedChange={() => handleSelectAssetItem(item.id)}
+                  checked={(() => {
+                    const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
+                    const isChecked = selectedAssetItems.has(itemIdentifier);
+                    console.log(`🔘 AssetItemsCardView checkbox for item ${item.serial_number}:`, { 
+                      item,
+                      itemIdentifier,
+                      isChecked,
+                      serialNumber: item.serial_number
+                    });
+                    return isChecked;
+                  })()}
+                  onCheckedChange={() => handleSelectAssetItem(item)}
                 />
                 <Package className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">#{item.serial_number}</span>
@@ -464,7 +524,7 @@ function AssetsRoute() {
                         e.stopPropagation();
                         // Handle assign action for available items
                         // This will be implemented in future
-                        console.log('Assign item:', item.id);
+                        console.log('Assign item:', item.serial_number);
                       }}
                     >
                       <Send className="h-3 w-3 mr-1" />
@@ -479,7 +539,7 @@ function AssetsRoute() {
                       e.stopPropagation();
                       // Handle edit action
                       // This will be implemented in future
-                      console.log('Edit item:', item.id);
+                      console.log('Edit item:', item.serial_number);
                     }}
                   >
                     <Edit3 className="h-3 w-3 mr-1" />
@@ -531,7 +591,7 @@ function AssetsRoute() {
           Asset Items
         </DropdownMenuItem>
         {assetItems.map((item, index) => (
-          <div key={item.id}>
+          <div key={item._computedId || item.serial_number}>
             {index > 0 && <div className="h-px bg-border mx-2" />}
             <DropdownMenuItem disabled className="p-0">
               <div className="w-full p-2 space-y-2">
@@ -559,7 +619,7 @@ function AssetsRoute() {
                         e.stopPropagation();
                         // Handle assign action for available items
                         // This will be implemented in future
-                        console.log('Assign item in dropdown:', item.id);
+                        console.log('Assign item in dropdown:', item.serial_number);
                       }}
                     >
                       <Send className="h-3 w-3 mr-1" />
@@ -574,7 +634,7 @@ function AssetsRoute() {
                       e.stopPropagation();
                       // Handle edit action
                       // This will be implemented in future
-                      console.log('Edit item in dropdown:', item.id);
+                      console.log('Edit item in dropdown:', item.serial_number);
                     }}
                   >
                     <Edit3 className="h-3 w-3 mr-1" />
