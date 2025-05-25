@@ -262,30 +262,86 @@ function AssetsRoute() {
     });
   };
 
+  /**
+   * Handles asset selection/deselection.
+   * When an asset is selected, all its loaded asset items are automatically selected.
+   * When an asset is deselected, all its loaded asset items are automatically deselected.
+   */
   const handleSelectAsset = (assetId: number) => {
     const newSelection = new Set(selectedAssets);
+    const newAssetItemSelection = new Set(selectedAssetItems);
+    
     if (newSelection.has(assetId)) {
+      // Deselecting asset - also deselect all its asset items
       newSelection.delete(assetId);
+      
+      // Get asset items for this asset if they're already loaded
+      const assetItems = queryClient.getQueryData(
+        assetItemsByAssetIdQueryOptions(assetId).queryKey
+      ) as AssetItem[] || [];
+      
+      // Remove all asset items for this asset from selection
+      assetItems.forEach(item => {
+        const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
+        newAssetItemSelection.delete(itemIdentifier);
+      });
     } else {
+      // Selecting asset - also select all its asset items
       newSelection.add(assetId);
+      
+      // Get asset items for this asset if they're already loaded
+      const assetItems = queryClient.getQueryData(
+        assetItemsByAssetIdQueryOptions(assetId).queryKey
+      ) as AssetItem[] || [];
+      
+      // Add all asset items for this asset to selection
+      assetItems.forEach(item => {
+        const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
+        newAssetItemSelection.add(itemIdentifier);
+      });
     }
+    
     setSelectedAssets(newSelection);
+    setSelectedAssetItems(newAssetItemSelection);
   };
 
+  /**
+   * Handles individual asset item selection/deselection.
+   * When an asset item is selected and all items for that asset become selected, the asset is automatically selected.
+   * When an asset item is deselected, the asset is automatically deselected (regardless of other items).
+   */
   const handleSelectAssetItem = (item: AssetItem) => {
     // Use computed ID or serial number as fallback for identification
     const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
     
-    const newSelection = new Set(selectedAssetItems);
-    const wasSelected = newSelection.has(itemIdentifier);
+    const newAssetItemSelection = new Set(selectedAssetItems);
+    const newAssetSelection = new Set(selectedAssets);
+    const wasSelected = newAssetItemSelection.has(itemIdentifier);
     
     if (wasSelected) {
-      newSelection.delete(itemIdentifier);
+      newAssetItemSelection.delete(itemIdentifier);
+      // If this was the last selected item for this asset, deselect the asset too
+      newAssetSelection.delete(item.assetId);
     } else {
-      newSelection.add(itemIdentifier);
+      newAssetItemSelection.add(itemIdentifier);
+      
+      // Check if all asset items for this asset are now selected
+      const assetItems = queryClient.getQueryData(
+        assetItemsByAssetIdQueryOptions(item.assetId).queryKey
+      ) as AssetItem[] || [];
+      
+      const allItemsSelected = assetItems.length > 0 && assetItems.every(assetItem => {
+        const assetItemIdentifier = assetItem._computedId || assetItem.serial_number || `${assetItem.asset}_${assetItem.serial_number}`;
+        return newAssetItemSelection.has(assetItemIdentifier);
+      });
+      
+      if (allItemsSelected) {
+        newAssetSelection.add(item.assetId);
+      }
     }
     
-    setSelectedAssetItems(newSelection);
+    setSelectedAssetItems(newAssetItemSelection);
+    setSelectedAssets(newAssetSelection);
   };
 
   const handleToggleExpand = (assetId: number) => {
@@ -507,9 +563,28 @@ function AssetsRoute() {
 
   const handleSelectAll = () => {
     if (selectedAssets.size === paginatedAssets.length) {
+      // Deselecting all assets - also deselect all asset items
       setSelectedAssets(new Set());
+      setSelectedAssetItems(new Set());
     } else {
-      setSelectedAssets(new Set(paginatedAssets.map(asset => asset.id)));
+      // Selecting all assets - also select all their asset items
+      const newAssetSelection = new Set(paginatedAssets.map(asset => asset.id));
+      const newAssetItemSelection = new Set(selectedAssetItems);
+      
+      // For each asset, add all its loaded asset items to selection
+      paginatedAssets.forEach(asset => {
+        const assetItems = queryClient.getQueryData(
+          assetItemsByAssetIdQueryOptions(asset.id).queryKey
+        ) as AssetItem[] || [];
+        
+        assetItems.forEach(item => {
+          const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
+          newAssetItemSelection.add(itemIdentifier);
+        });
+      });
+      
+      setSelectedAssets(newAssetSelection);
+      setSelectedAssetItems(newAssetItemSelection);
     }
   };
 
