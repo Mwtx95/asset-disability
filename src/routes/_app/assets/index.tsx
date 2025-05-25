@@ -1236,20 +1236,6 @@ function AssetsRoute() {
               
               <div className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium">Transfer Type</label>
-                  <Select defaultValue="transfer">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="assign">Assign to User</SelectItem>
-                      <SelectItem value="transfer">Transfer to Location</SelectItem>
-                      <SelectItem value="maintenance">Send to Maintenance</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
                   <label className="text-sm font-medium">Destination</label>
                   <Select>
                     <SelectTrigger>
