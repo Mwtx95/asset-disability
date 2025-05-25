@@ -279,28 +279,14 @@ function AssetsRoute() {
     // Use computed ID or serial number as fallback for identification
     const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
     
-    console.log('🔍 handleSelectAssetItem called:', { 
-      item,
-      itemIdentifier,
-      currentSelection: Array.from(selectedAssetItems) 
-    });
-    
     const newSelection = new Set(selectedAssetItems);
     const wasSelected = newSelection.has(itemIdentifier);
     
     if (wasSelected) {
-      console.log('❌ Removing item:', itemIdentifier);
       newSelection.delete(itemIdentifier);
     } else {
-      console.log('✅ Adding item:', itemIdentifier);
       newSelection.add(itemIdentifier);
     }
-    
-    console.log('📊 Selection state change:', { 
-      wasSelected,
-      newSelection: Array.from(newSelection),
-      selectionSize: newSelection.size
-    });
     
     setSelectedAssetItems(newSelection);
   };
@@ -323,16 +309,6 @@ function AssetsRoute() {
   // Asset Items Row Component
   const AssetItemsRow = ({ assetId }: { assetId: number }) => {
     const { data: assetItems = [], isLoading, error } = useQuery(assetItemsByAssetIdQueryOptions(assetId));
-
-    // Add debug logging to see the actual structure of asset items
-    console.log('🔍 AssetItemsRow debug:', {
-      assetId,
-      assetItems,
-      firstItem: assetItems[0],
-      firstItemKeys: assetItems[0] ? Object.keys(assetItems[0]) : [],
-      isLoading,
-      error
-    });
 
     if (isLoading) {
       return (
@@ -377,12 +353,6 @@ function AssetsRoute() {
                 checked={(() => {
                   const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
                   const isChecked = selectedAssetItems.has(itemIdentifier);
-                  console.log(`🔘 AssetItemsRow checkbox for item ${item.serial_number}:`, { 
-                    item,
-                    itemIdentifier,
-                    isChecked,
-                    serialNumber: item.serial_number
-                  });
                   return isChecked;
                 })()}
                 onCheckedChange={() => handleSelectAssetItem(item)}
@@ -447,15 +417,7 @@ function AssetsRoute() {
   const AssetItemsCardView = ({ assetId }: { assetId: number }) => {
     const { data: assetItems = [], isLoading, error } = useQuery(assetItemsByAssetIdQueryOptions(assetId));
 
-    // Add debug logging to see the actual structure of asset items
-    console.log('🔍 AssetItemsCardView debug:', {
-      assetId,
-      assetItems,
-      firstItem: assetItems[0],
-      firstItemKeys: assetItems[0] ? Object.keys(assetItems[0]) : [],
-      isLoading,
-      error
-    });
+
 
     if (isLoading) {
       return (
@@ -491,14 +453,7 @@ function AssetsRoute() {
                 <Checkbox
                   checked={(() => {
                     const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
-                    const isChecked = selectedAssetItems.has(itemIdentifier);
-                    console.log(`🔘 AssetItemsCardView checkbox for item ${item.serial_number}:`, { 
-                      item,
-                      itemIdentifier,
-                      isChecked,
-                      serialNumber: item.serial_number
-                    });
-                    return isChecked;
+                    return selectedAssetItems.has(itemIdentifier);
                   })()}
                   onCheckedChange={() => handleSelectAssetItem(item)}
                 />
