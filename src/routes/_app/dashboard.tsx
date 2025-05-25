@@ -238,8 +238,8 @@ function DashboardComponent() {
     
     return assetItems
       .sort((a, b) => {
-        const dateA = a.purchaseDate ? new Date(a.purchaseDate).getTime() : 0;
-        const dateB = b.purchaseDate ? new Date(b.purchaseDate).getTime() : 0;
+        const dateA = a.purchase_date ? new Date(a.purchase_date).getTime() : 0;
+        const dateB = b.purchase_date ? new Date(b.purchase_date).getTime() : 0;
         return dateB - dateA;
       })
       .slice(0, 5)
@@ -248,7 +248,7 @@ function DashboardComponent() {
         asset: item.asset_name || "Unknown Asset",
         action: determineAction(item),
         location: item.location_name || "Unknown Location",
-        date: formatDate(item.purchaseDate),
+        date: formatDate(item.purchase_date),
         status: determineStatus(item.status || ""),
       }));
   }, [assetItems]);

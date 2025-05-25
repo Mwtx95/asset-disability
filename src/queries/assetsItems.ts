@@ -11,31 +11,33 @@ type status = 'AVAILABLE' | 'MAINTENANCE' | 'BROKEN' | 'ASSIGNED';
 export interface AssetItem {
     id?: number;  // Optional since backend doesn't provide it
     asset_name: string;
-    assetId: number;
+    asset: number;  // Changed from assetId to match Django
     serial_number: string;
-    purchaseDate: Date;
-    warrantyExpiryDate: Date;
-    notes?: string;
-    quantity: number;
+    purchase_date: string;  // Changed from purchaseDate, Django returns string
+    warranty_expiry_date: string;  // Changed from warrantyExpiryDate, Django returns string
+    description?: string;  // Changed from notes to match Django
     price: number;
     status: status;
-    locationId: number;
-    vendorId: number;
-    asset: string;
+    location: number;  // Changed from locationId to match Django
+    vendor: number;  // Changed from vendorId to match Django
     location_name: string;
+    vendor_name?: string;
+    created_at: string;  // Added
+    updated_at: string;  // Added
+    asset_details?: any;  // Added for nested asset data
     // Add computed ID based on serial number for frontend use
     _computedId?: string;
 }
 
 export interface CreateAssetItemDTO {
-    assetId: number;
+    asset: number;  // Changed from assetId
     serial_number: string;
-    locationId: number;
-    vendorId: number;
-    purchaseDate: Date;
-    warrantyExpiryDate: Date;
+    location: number;  // Changed from locationId
+    vendor: number;  // Changed from vendorId
+    purchase_date: string;  // Changed from purchaseDate, using string
+    warranty_expiry_date: string;  // Changed from warrantyExpiryDate, using string
     price: number;
-    notes?: string;
+    description?: string;  // Changed from notes
 }
 
 async function getAssetItems() {
@@ -111,7 +113,7 @@ export function useCreateAssetItem() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['asset-items'] });
             queryClient.invalidateQueries({
-                queryKey: ['asset-items', 'asset', data.assetId]
+                queryKey: ['asset-items', 'asset', data.asset]
             });
         },
     });
@@ -125,7 +127,7 @@ export function useUpdateAssetItem() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['asset-items'] });
             queryClient.invalidateQueries({
-                queryKey: ['asset-items', 'asset', data.assetId]
+                queryKey: ['asset-items', 'asset', data.asset]
             });
         },
     });
