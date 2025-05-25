@@ -1,5 +1,6 @@
 import { AddAssetForm } from "@/components/assets/add-asset-form";
 import { EditAssetForm } from "@/components/assets/edit-asset-form";
+import { EditAssetItemForm } from "@/components/assets/edit-asset-item-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -107,6 +108,8 @@ function AssetsRoute() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedAssetForEdit, setSelectedAssetForEdit] = useState<Asset | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedAssetItemForEdit, setSelectedAssetItemForEdit] = useState<AssetItem | null>(null);
+  const [isEditAssetItemDialogOpen, setIsEditAssetItemDialogOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{field: string, direction: "asc" | "desc"}>({
     field: "name",
     direction: "asc"
@@ -367,6 +370,11 @@ function AssetsRoute() {
     setIsEditDialogOpen(true);
   };
 
+  const handleEditAssetItem = (assetItem: AssetItem) => {
+    setSelectedAssetItemForEdit(assetItem);
+    setIsEditAssetItemDialogOpen(true);
+  };
+
   // Asset Items Row Component
   const AssetItemsRow = ({ assetId }: { assetId: number }) => {
     const { data: assetItems = [], isLoading, error } = useQuery(assetItemsByAssetIdQueryOptions(assetId));
@@ -458,9 +466,7 @@ function AssetsRoute() {
                   className="h-8 px-3 text-xs"
                   onClick={(e) => {
                     e.stopPropagation();
-                    // Handle edit action
-                    // This will be implemented in future
-                    console.log('Edit item:', item.serial_number);
+                    handleEditAssetItem(item);
                   }}
                 >
                   <Edit3 className="h-3 w-3 mr-1" />
@@ -552,9 +558,7 @@ function AssetsRoute() {
                     className="h-6 px-2 text-xs flex-1"
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Handle edit action
-                      // This will be implemented in future
-                      console.log('Edit item in dropdown:', item.serial_number);
+                      handleEditAssetItem(item);
                     }}
                   >
                     <Edit3 className="h-3 w-3 mr-1" />
@@ -1014,6 +1018,24 @@ function AssetsRoute() {
               onSuccess={() => {
                 setIsEditDialogOpen(false);
                 setSelectedAssetForEdit(null);
+              }} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Asset Item Dialog */}
+      <Dialog open={isEditAssetItemDialogOpen} onOpenChange={setIsEditAssetItemDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Asset Item</DialogTitle>
+          </DialogHeader>
+          {selectedAssetItemForEdit && (
+            <EditAssetItemForm 
+              assetItem={selectedAssetItemForEdit} 
+              onSuccess={() => {
+                setIsEditAssetItemDialogOpen(false);
+                setSelectedAssetItemForEdit(null);
               }} 
             />
           )}
