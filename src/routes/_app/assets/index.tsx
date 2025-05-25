@@ -33,10 +33,11 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { assetsQueryOptions, Asset } from "@/queries/assets";
+import { AssetItem } from "@/queries/assetsItems";
 import { categoriesStatsQueryOptions } from "@/queries/categories";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ArrowUpDown,
@@ -99,6 +100,7 @@ function AssetsRoute() {
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [isAddModalOpen, setIsAddModalOpen] = useState(!!addAsset);
   const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
   const [selectedAssetForDetails, setSelectedAssetForDetails] = useState<Asset | null>(null);
@@ -261,6 +263,16 @@ function AssetsRoute() {
       newSelection.add(assetId);
     }
     setSelectedAssets(newSelection);
+  };
+
+  const handleToggleExpand = (assetId: number) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(assetId)) {
+      newExpanded.delete(assetId);
+    } else {
+      newExpanded.add(assetId);
+    }
+    setExpandedRows(newExpanded);
   };
 
   const handleViewDetails = (asset: Asset) => {
