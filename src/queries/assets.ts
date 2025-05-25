@@ -27,6 +27,7 @@ export interface Asset {
   currentLocation?: string;
   condition?: string;
   warrantyInfo?: string;
+  warrantyExpiryDate?: string;
   notes?: string;
 }
 

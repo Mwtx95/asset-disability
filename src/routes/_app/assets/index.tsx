@@ -93,6 +93,7 @@ function AssetsRoute() {
   // Data queries
   const { data: categories = [] } = useSuspenseQuery(categoriesStatsQueryOptions);
   const { data: assets = [] } = useSuspenseQuery(assetsQueryOptions);
+  console.log('Assets data:', assets);
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
   const { data: vendors = [] } = useSuspenseQuery(vendorsQueryOptions);
 
@@ -496,8 +497,9 @@ function AssetsRoute() {
                             <TableCell colSpan={8} className="bg-muted/30 p-0">
                               <div className="p-4 space-y-3">
                                 <h4 className="font-medium text-sm text-muted-foreground mb-3">
-                                  Asset Details
+                                  Asset Details - Expanded
                                 </h4>
+                                
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                   <div className="space-y-1">
                                     <div className="font-medium text-muted-foreground">Financial Information</div>
@@ -521,21 +523,23 @@ function AssetsRoute() {
                                     <div className="font-medium text-muted-foreground">Warranty Information</div>
                                     <div className="space-y-1">
                                       <div className="flex justify-between">
-                                        <span>Warranty Info:</span>
-                                        <span className="font-medium">{asset.warrantyInfo || 'N/A'}</span>
+                                        <span>Warranty Expiry:</span>
+                                        <span className="font-medium">
+                                          {asset.warrantyExpiryDate ? new Date(asset.warrantyExpiryDate).toLocaleDateString() : 'N/A'}
+                                        </span>
                                       </div>
                                     </div>
                                   </div>
                                 </div>
                                 
-                                {asset.notes && (
-                                  <div className="pt-2 border-t">
-                                    <div className="font-medium text-muted-foreground text-sm mb-1">Notes:</div>
-                                    <p className="text-sm text-muted-foreground">{asset.notes}</p>
+                                <div className="mt-4 pt-4 border-t">
+                                  <div className="flex items-start">
+                                    <span className="font-medium text-muted-foreground mr-2 w-24">Description:</span>
+                                    <span className="flex-1">{asset.notes || 'N/A'}</span>
                                   </div>
-                                )}
+                                </div>
                                 
-                                <div className="pt-2 border-t">
+                                <div className="pt-4 mt-4 border-t">
                                   <p className="text-xs text-muted-foreground">
                                     <Eye className="h-3 w-3 inline mr-1" />
                                     To view individual asset items, use "View Asset Items" in the actions menu
@@ -668,17 +672,18 @@ function AssetsRoute() {
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Warranty:</span>
-                            <span className="font-medium">{asset.warrantyInfo || 'N/A'}</span>
+                            <span className="text-muted-foreground">Warranty Expiry:</span>
+                            <span className="font-medium">
+                              {asset.warrantyExpiryDate ? new Date(asset.warrantyExpiryDate).toLocaleDateString() : 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Description:</span>
+                            <span className="font-medium">
+                              {asset.notes || 'N/A'}
+                            </span>
                           </div>
                         </div>
-                        
-                        {asset.notes && (
-                          <div className="pt-2 mt-2 border-t">
-                            <div className="font-medium text-muted-foreground mb-1">Notes:</div>
-                            <p className="text-muted-foreground">{asset.notes}</p>
-                          </div>
-                        )}
                         
                         <div className="pt-2 mt-2 border-t">
                           <p className="text-xs text-muted-foreground">
