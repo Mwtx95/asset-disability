@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { assetsQueryOptions, Asset } from "@/queries/assets";
-import { AssetItem } from "@/queries/assetsItems";
+import { AssetItem, assetItemsByAssetIdQueryOptions } from "@/queries/assetsItems";
 import { categoriesStatsQueryOptions } from "@/queries/categories";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
@@ -280,6 +280,242 @@ function AssetsRoute() {
     setIsDetailsDialogOpen(true);
   };
 
+  // Asset Items Row Component
+  const AssetItemsRow = ({ assetId }: { assetId: number }) => {
+    const { data: assetItems = [], isLoading, error } = useQuery(assetItemsByAssetIdQueryOptions(assetId));
+
+    if (isLoading) {
+      return (
+        <TableRow>
+          <TableCell colSpan={10} className="text-center py-4">
+            <div className="flex items-center justify-center gap-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+              Loading asset items...
+            </div>
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    if (error) {
+      return (
+        <TableRow>
+          <TableCell colSpan={10} className="text-center py-4 text-red-600">
+            Error loading asset items
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    if (assetItems.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={10} className="text-center py-4 text-muted-foreground">
+            No asset items found for this asset
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    return (
+      <>
+        {assetItems.map((item) => (
+          <TableRow key={item.id} className="bg-muted/30">
+            <TableCell></TableCell> {/* Empty expand cell */}
+            <TableCell></TableCell> {/* Empty checkbox cell */}
+            <TableCell colSpan={3} className="pl-8 text-sm">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">#{item.serial_number}</span>
+              </div>
+            </TableCell>
+            <TableCell colSpan={3} className="text-center">
+              <Badge 
+                variant={item.status === 'AVAILABLE' ? 'default' : 
+                        item.status === 'ASSIGNED' ? 'secondary' : 
+                        item.status === 'MAINTENANCE' ? 'destructive' : 'outline'}
+              >
+                {item.status}
+              </Badge>
+            </TableCell>
+            <TableCell colSpan={4}>
+              <div className="flex items-center gap-2 justify-end">
+                {item.status === 'AVAILABLE' && (
+                  <Button variant="secondary" size="sm" className="h-8 px-3 text-xs">
+                    <Send className="h-3 w-3 mr-1" />
+                    Assign
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
+                  <Edit3 className="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </>
+    );
+  };
+
+  // Asset Items Card View Component
+  const AssetItemsCardView = ({ assetId }: { assetId: number }) => {
+    const { data: assetItems = [], isLoading, error } = useQuery(assetItemsByAssetIdQueryOptions(assetId));
+
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center py-4">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <span className="ml-2 text-sm">Loading asset items...</span>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="text-center py-4 text-red-600 text-sm">
+          Error loading asset items
+        </div>
+      );
+    }
+
+    if (assetItems.length === 0) {
+      return (
+        <div className="text-center py-4 text-muted-foreground text-sm">
+          No asset items found for this asset
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        <div className="space-y-2">
+          {assetItems.map((item) => (
+            <div key={item.id} className="flex items-center justify-between p-3 bg-background rounded border">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">#{item.serial_number}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge 
+                  variant={item.status === 'AVAILABLE' ? 'default' : 
+                          item.status === 'ASSIGNED' ? 'secondary' : 
+                          item.status === 'MAINTENANCE' ? 'destructive' : 'outline'}
+                  className="text-xs"
+                >
+                  {item.status}
+                </Badge>
+                <div className="flex items-center gap-1">
+                  {item.status === 'AVAILABLE' && (
+                    <Button variant="secondary" size="sm" className="h-7 px-2 text-xs">
+                      <Send className="h-3 w-3 mr-1" />
+                      Assign
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
+                    <Edit3 className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Asset Items Dropdown Component
+  const AssetItemsDropdown = ({ assetId }: { assetId: number }) => {
+    const { data: assetItems = [], isLoading, error } = useQuery(assetItemsByAssetIdQueryOptions(assetId));
+
+    if (isLoading) {
+      return (
+        <DropdownMenuItem disabled>
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 animate-spin rounded-full border border-primary border-t-transparent"></div>
+            Loading items...
+          </div>
+        </DropdownMenuItem>
+      );
+    }
+
+    if (error) {
+      return (
+        <DropdownMenuItem disabled className="text-red-600">
+          Error loading items
+        </DropdownMenuItem>
+      );
+    }
+
+    if (assetItems.length === 0) {
+      return (
+        <DropdownMenuItem disabled className="text-muted-foreground">
+          No asset items found
+        </DropdownMenuItem>
+      );
+    }
+
+    return (
+      <>
+        <DropdownMenuItem disabled className="font-medium text-xs text-muted-foreground uppercase tracking-wide">
+          Asset Items
+        </DropdownMenuItem>
+        {assetItems.map((item, index) => (
+          <div key={item.id}>
+            {index > 0 && <div className="h-px bg-border mx-2" />}
+            <DropdownMenuItem disabled className="p-0">
+              <div className="w-full p-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-sm font-medium">#{item.serial_number}</span>
+                  </div>
+                  <Badge 
+                    variant={item.status === 'AVAILABLE' ? 'default' : 
+                            item.status === 'ASSIGNED' ? 'secondary' : 
+                            item.status === 'MAINTENANCE' ? 'destructive' : 'outline'}
+                    className="text-xs"
+                  >
+                    {item.status}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-1">
+                  {item.status === 'AVAILABLE' && (
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      className="h-6 px-2 text-xs flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle assign action
+                      }}
+                    >
+                      <Send className="h-3 w-3 mr-1" />
+                      Assign
+                    </Button>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-6 px-2 text-xs flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Handle edit action
+                    }}
+                  >
+                    <Edit3 className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                </div>
+              </div>
+            </DropdownMenuItem>
+          </div>
+        ))}
+      </>
+    );
+  };
+
   const handleSelectAll = () => {
     if (selectedAssets.size === paginatedAssets.length) {
       setSelectedAssets(new Set());
@@ -495,6 +731,7 @@ function AssetsRoute() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12 text-center"></TableHead> {/* Expand column */}
                     <TableHead className="w-16 text-center">
                       <Checkbox
                         checked={selectedAssets.size === paginatedAssets.length && paginatedAssets.length > 0}
@@ -538,8 +775,22 @@ function AssetsRoute() {
                 </TableHeader>
                 <TableBody>
                   {paginatedAssets.length > 0 ? (
-                    paginatedAssets.map((asset) => (
+                    paginatedAssets.flatMap((asset) => [
                       <TableRow key={asset.id}>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleExpand(asset.id)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronDown 
+                              className={`h-4 w-4 transition-transform ${
+                                expandedRows.has(asset.id) ? 'rotate-180' : ''
+                              }`} 
+                            />
+                          </Button>
+                        </TableCell>
                         <TableCell>
                           <Checkbox
                             checked={selectedAssets.has(asset.id)}
@@ -598,38 +849,18 @@ function AssetsRoute() {
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem 
-                                onClick={() => handleViewDetails(asset)}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => navigate({ 
-                                  to: '/assets/$assetCategory', 
-                                  params: { assetCategory: `${asset.id}_${asset.name}` } 
-                                })}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Asset Items
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Edit3 className="h-4 w-4 mr-2" />
-                                Edit Asset
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Asset
-                              </DropdownMenuItem>
+                            <DropdownMenuContent align="end" className="w-64">
+                              <AssetItemsDropdown assetId={asset.id} />
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
-                      </TableRow>
-                    ))
+                      </TableRow>,
+                      // Expanded asset items row
+                      ...(expandedRows.has(asset.id) ? [<AssetItemsRow key={`${asset.id}-items`} assetId={asset.id} />] : [])
+                    ])
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8">
+                      <TableCell colSpan={10} className="text-center py-8">
                         <Package className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
                         <p className="text-muted-foreground">No assets found</p>
                         <p className="text-sm text-muted-foreground/70">
@@ -671,6 +902,19 @@ function AssetsRoute() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => handleToggleExpand(asset.id)}
+                        className="h-8 w-8 p-0"
+                        title="Expand to show asset items"
+                      >
+                        <ChevronDown 
+                          className={`h-4 w-4 transition-transform ${
+                            expandedRows.has(asset.id) ? 'rotate-180' : ''
+                          }`} 
+                        />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleViewDetails(asset)}
                         className="h-8 w-8 p-0"
                         title="View asset details"
@@ -683,30 +927,8 @@ function AssetsRoute() {
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            onClick={() => handleViewDetails(asset)}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => navigate({ 
-                              to: '/assets/$assetCategory', 
-                              params: { assetCategory: `${asset.id}_${asset.name}` } 
-                            })}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Asset Items
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit3 className="h-4 w-4 mr-2" />
-                            Edit Asset
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Asset
-                          </DropdownMenuItem>
+                        <DropdownMenuContent align="end" className="w-64">
+                          <AssetItemsDropdown assetId={asset.id} />
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -754,6 +976,13 @@ function AssetsRoute() {
                     </div>
                   </div>
                 </CardContent>
+                
+                {/* Expanded Asset Items for Cards */}
+                {expandedRows.has(asset.id) && (
+                  <CardContent className="pt-0 border-t bg-muted/30">
+                    <AssetItemsCardView assetId={asset.id} />
+                  </CardContent>
+                )}
               </Card>
             ))
           ) : (
