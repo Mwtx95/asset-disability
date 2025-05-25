@@ -1229,6 +1229,16 @@ function AssetsRoute() {
                       </span>
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Warranty Expiry:</span>
+                      <span className="text-sm font-medium">
+                        {selectedAssetForDetails.warrantyExpiryDate 
+                          ? new Date(selectedAssetForDetails.warrantyExpiryDate).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
