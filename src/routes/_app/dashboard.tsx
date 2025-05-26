@@ -701,7 +701,7 @@ function DashboardComponent() {
                       cy="50%"
                       innerRadius={60}
                       outerRadius={120}
-                      paddingAngle={5}
+                      paddingAngle={0}
                       dataKey="value"
                     >
                       {chartData.map((entry, index) => (
