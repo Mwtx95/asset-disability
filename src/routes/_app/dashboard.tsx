@@ -26,6 +26,7 @@ import {
   Users,
   Wrench,
   XCircle,
+  Boxes,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import * as React from "react";
@@ -435,11 +436,12 @@ function DashboardComponent() {
 
   // Asset Distribution by Location data
   const locationDistributionData = React.useMemo(() => {
-    if (!assets.length) return [];
+    if (!assets.length && !assetItems.length) return [];
     
-    // Count assets by location with proper name mapping
-    const locationCounts: Record<string, number> = {};
+    // Count assets and asset items by location with proper name mapping
+    const locationCounts: Record<string, { assets: number; assetItems: number }> = {};
     
+    // Count assets by location
     assets.forEach(asset => {
       // Find the location name by matching the location ID or name
       const locationObj = locations.find(loc => 
@@ -449,19 +451,40 @@ function DashboardComponent() {
       );
       
       const locationName = locationObj?.name || asset.location || 'Unknown Location';
-      locationCounts[locationName] = (locationCounts[locationName] || 0) + 1;
+      if (!locationCounts[locationName]) {
+        locationCounts[locationName] = { assets: 0, assetItems: 0 };
+      }
+      locationCounts[locationName].assets += 1;
+    });
+
+    // Count asset items by location
+    assetItems.forEach(item => {
+      // Find the location name by matching the location ID or name
+      const locationObj = locations.find(loc => 
+        loc.id === String(item.location) || 
+        loc.name === item.location_name
+      );
+      
+      const locationName = locationObj?.name || item.location_name || 'Unknown Location';
+      if (!locationCounts[locationName]) {
+        locationCounts[locationName] = { assets: 0, assetItems: 0 };
+      }
+      locationCounts[locationName].assetItems += 1;
     });
     
-    // Convert to chart format and sort by count descending
+    // Convert to chart format and sort by total count descending
     return Object.entries(locationCounts)
-      .map(([location, count]) => ({
+      .map(([location, counts]) => ({
         location,
         locationName: location, // Use the mapped location name
-        assets: count,
-        percentage: assets.length > 0 ? (count / assets.length) * 100 : 0
+        assets: counts.assets,
+        assetItems: counts.assetItems,
+        total: counts.assets + counts.assetItems,
+        assetsPercentage: (counts.assets + counts.assetItems) > 0 ? (counts.assets / (counts.assets + counts.assetItems)) * 100 : 0,
+        assetItemsPercentage: (counts.assets + counts.assetItems) > 0 ? (counts.assetItems / (counts.assets + counts.assetItems)) * 100 : 0
       }))
-      .sort((a, b) => b.assets - a.assets);
-  }, [assets, locations]);
+      .sort((a, b) => b.total - a.total);
+  }, [assets, assetItems, locations]);
 
   if (isLoading) {
     return (
@@ -473,6 +496,22 @@ function DashboardComponent() {
         {/* Top-level stats skeleton */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-[100px]" />
+                <Skeleton className="h-5 w-5" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-[60px]" />
+                <Skeleton className="mt-1 h-4 w-[120px]" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Secondary stats skeleton */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, i) => (
             <Card key={i}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <Skeleton className="h-4 w-[100px]" />
@@ -531,13 +570,22 @@ function DashboardComponent() {
         <AssetsListModal assets={transformedAssets}>
           <StatCard
             title="Total Assets"
-            value={assetItems.length}
+            value={assets.length}
             icon={<Package className="h-5 w-5" />}
-            description="Items in inventory"
+            description="Unique asset types"
             trend="up"
             trendValue="+12.5%"
           />
         </AssetsListModal>
+        
+        <StatCard
+          title="Total Asset Items"
+          value={assetItems.length}
+          icon={<Boxes className="h-5 w-5" />}
+          description="Individual items in inventory"
+          trend="up"
+          trendValue="+8.3%"
+        />
         
         <StatCard
           title="Locations (Branches)"
@@ -556,7 +604,10 @@ function DashboardComponent() {
           trend="up"
           trendValue="+5.3%"
         />
-        
+      </div>
+
+      {/* Secondary Stats */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <StatCard
           title="Vendors"
           value={vendors.length}
@@ -565,6 +616,23 @@ function DashboardComponent() {
           trend="up"
           trendValue="+1.2%"
         />
+        
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Asset to Items Ratio</p>
+              <p className="text-3xl font-bold">
+                {assets.length > 0 ? (assetItems.length / assets.length).toFixed(1) : '0'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Average items per asset type
+              </p>
+            </div>
+            <div className="h-5 w-5 text-muted-foreground">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Asset Status Breakdown */}
@@ -673,7 +741,7 @@ function DashboardComponent() {
             <div>
               <CardTitle className="text-lg">Asset Distribution by Location</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Total assets across all locations
+                Assets and asset items across all locations
               </p>
             </div>
             <MapPin className="h-5 w-5 text-muted-foreground" />
@@ -701,7 +769,7 @@ function DashboardComponent() {
                     />
                     <YAxis />
                     <Tooltip 
-                      formatter={(value, name) => [value, `Total Assets`]}
+                      formatter={(value, name) => [value, name]}
                       labelFormatter={(label) => `Location: ${label}`}
                       contentStyle={{
                         backgroundColor: 'white',
@@ -714,7 +782,13 @@ function DashboardComponent() {
                     <Bar
                       dataKey="assets"
                       fill="#3b82f6"
-                      name="Total Assets"
+                      name="Asset Types"
+                      radius={[2, 2, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="assetItems"
+                      fill="#10b981"
+                      name="Asset Items"
                       radius={[2, 2, 0, 0]}
                     />
                   </BarChart>
@@ -736,76 +810,6 @@ function DashboardComponent() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Asset Distribution by Location */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            Asset Distribution by Location
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Overview of asset allocation across locations
-          </p>
-        </CardHeader>
-        <CardContent>
-          {locationDistributionData.length > 0 ? (
-            <div className="flex items-center justify-center h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={locationDistributionData}
-                  margin={{ 
-                    top: 20, 
-                    right: 30, 
-                    left: 20, 
-                    bottom: 60 
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="location" 
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    fontSize={12}
-                    stroke="#64748b"
-                  />
-                  <YAxis stroke="#64748b" />
-                  <Tooltip 
-                    formatter={(value, name) => [value, 'Total Assets']}
-                    labelFormatter={(label) => `Location: ${label}`}
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Legend />
-                  <Bar 
-                    dataKey="assets" 
-                    fill="#3b82f6" 
-                    name="Total Assets"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20">
-              <div className="text-center">
-                <TrendingUp className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  No asset distribution data available
-                </p>
-                <p className="text-xs text-muted-foreground/70">
-                  Assets will appear here as they are added to locations
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Recent Activities */}
       <Card>
