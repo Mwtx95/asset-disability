@@ -27,6 +27,7 @@ import {
   Wrench,
   XCircle,
 } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import * as React from "react";
 import { locationQueryOptions } from "@/queries/locations";
 import { assetsQueryOptions } from "@/queries/assets";
@@ -232,6 +233,123 @@ function DashboardComponent() {
     };
   }, [assetItems]);
 
+  // Prepare donut chart data
+  const chartData = React.useMemo(() => [
+    { 
+      name: 'Available', 
+      value: statusBreakdown.available.count, 
+      color: '#10b981',
+      percentage: statusBreakdown.available.percentage 
+    },
+    { 
+      name: 'Assigned', 
+      value: statusBreakdown.assigned.count, 
+      color: '#3b82f6',
+      percentage: statusBreakdown.assigned.percentage 
+    },
+    { 
+      name: 'Maintenance', 
+      value: statusBreakdown.maintenance.count, 
+      color: '#f59e0b',
+      percentage: statusBreakdown.maintenance.percentage 
+    },
+    { 
+      name: 'Broken', 
+      value: statusBreakdown.broken.count, 
+      color: '#ef4444',
+      percentage: statusBreakdown.broken.percentage 
+    },
+  ].filter(item => item.value > 0), [statusBreakdown]);
+
+  // Prepare stacked bar chart data for assets by category and location
+  const stackedBarData = React.useMemo(() => {
+    if (!assets.length || !locations.length || !categoriesStats.length) return [];
+
+    // Create a mapping of category name to location counts
+    const categoryLocationMap = new Map<string, Map<string, number>>();
+
+    // Initialize categories from categoriesStats
+    categoriesStats.forEach(category => {
+      categoryLocationMap.set(category.name, new Map());
+    });
+
+    // Count assets by category and location
+    assets.forEach(asset => {
+      const categoryName = asset.categoryName || 'Unknown';
+      const locationName = locations.find(loc => 
+        loc.id === asset.location || 
+        loc.id === String(asset.location) || 
+        loc.name === asset.location
+      )?.name || asset.location || 'Unknown';
+
+      if (!categoryLocationMap.has(categoryName)) {
+        categoryLocationMap.set(categoryName, new Map());
+      }
+
+      const locationMap = categoryLocationMap.get(categoryName)!;
+      locationMap.set(locationName, (locationMap.get(locationName) || 0) + 1);
+    });
+
+    // Convert to format needed for recharts
+    const chartData = Array.from(categoryLocationMap.entries()).map(([category, locationMap]) => {
+      const categoryData: any = { category };
+      
+      // Add each location as a property
+      locations.forEach(location => {
+        categoryData[location.name] = locationMap.get(location.name) || 0;
+      });
+
+      return categoryData;
+    }).filter(item => {
+      // Only include categories that have at least one asset
+      const total = locations.reduce((sum, loc) => sum + (item[loc.name] || 0), 0);
+      return total > 0;
+    });
+
+    return chartData;
+  }, [assets, locations, categoriesStats]);
+
+  // Generate colors for each location/branch
+  const locationColors = React.useMemo(() => {
+    const colors = [
+      '#3b82f6', // blue
+      '#10b981', // green
+      '#f59e0b', // orange
+      '#ef4444', // red
+      '#8b5cf6', // purple
+      '#06b6d4', // cyan
+      '#84cc16', // lime
+      '#f97316', // orange-500
+      '#ec4899', // pink
+      '#6366f1', // indigo
+    ];
+    
+    const colorMap: Record<string, string> = {};
+    locations.forEach((location, index) => {
+      colorMap[location.name] = colors[index % colors.length];
+    });
+    
+    return colorMap;
+  }, [locations]);
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white p-3 border rounded-lg shadow-lg">
+          <p className="font-medium">{data.name}</p>
+          <p className="text-sm text-muted-foreground">
+            Count: {data.value}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Percentage: {data.percentage.toFixed(1)}%
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   // Create recent activities from asset items (last 5 activities)
   const recentActivities = React.useMemo(() => {
     if (!assetItems.length) return [];
@@ -314,6 +432,36 @@ function DashboardComponent() {
     } as const;
     return colors[status];
   };
+
+  // Asset Distribution by Location data
+  const locationDistributionData = React.useMemo(() => {
+    if (!assets.length) return [];
+    
+    // Count assets by location with proper name mapping
+    const locationCounts: Record<string, number> = {};
+    
+    assets.forEach(asset => {
+      // Find the location name by matching the location ID or name
+      const locationObj = locations.find(loc => 
+        loc.id === asset.location || 
+        loc.id === String(asset.location) || 
+        loc.name === asset.location
+      );
+      
+      const locationName = locationObj?.name || asset.location || 'Unknown Location';
+      locationCounts[locationName] = (locationCounts[locationName] || 0) + 1;
+    });
+    
+    // Convert to chart format and sort by count descending
+    return Object.entries(locationCounts)
+      .map(([location, count]) => ({
+        location,
+        locationName: location, // Use the mapped location name
+        assets: count,
+        percentage: assets.length > 0 ? (count / assets.length) * 100 : 0
+      }))
+      .sort((a, b) => b.assets - a.assets);
+  }, [assets, locations]);
 
   if (isLoading) {
     return (
@@ -461,29 +609,201 @@ function DashboardComponent() {
         </div>
       </div>
 
-      {/* Charts Section Placeholder */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">Analytics & Charts</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Visual insights and trends (Coming Soon)
-            </p>
-          </div>
-          <BarChart3 className="h-5 w-5 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20">
-            <div className="text-center">
-              <TrendingUp className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
+      {/* Charts Section */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Donut Chart - Asset Status Distribution */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Asset Status Distribution</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Charts and analytics will be displayed here
-              </p>
-              <p className="text-xs text-muted-foreground/70">
-                Asset utilization, trends, and performance metrics
+                Visual breakdown of asset items by status
               </p>
             </div>
-          </div>
+            <BarChart3 className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {chartData.length > 0 ? (
+              <div className="flex items-center justify-center h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={120}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36}
+                      formatter={(value, entry: any) => 
+                        `${value}: ${entry.payload.value} (${entry.payload.percentage.toFixed(1)}%)`
+                      }
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20">
+                <div className="text-center">
+                  <TrendingUp className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    No asset data available for chart
+                  </p>
+                  <p className="text-xs text-muted-foreground/70">
+                    Add some assets to see the status distribution
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Bar Chart - Asset Distribution by Location */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Asset Distribution by Location</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Total assets across all locations
+              </p>
+            </div>
+            <MapPin className="h-5 w-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {locationDistributionData.length > 0 ? (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={locationDistributionData}
+                    margin={{
+                      top: 20,
+                      right: 30,
+                      left: 20,
+                      bottom: 60,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="location" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      fontSize={12}
+                    />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value, name) => [value, `Total Assets`]}
+                      labelFormatter={(label) => `Location: ${label}`}
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="assets"
+                      fill="#3b82f6"
+                      name="Total Assets"
+                      radius={[2, 2, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20">
+                <div className="text-center">
+                  <MapPin className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    No location data available for chart
+                  </p>
+                  <p className="text-xs text-muted-foreground/70">
+                    Add some assets to see the location distribution
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Asset Distribution by Location */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Asset Distribution by Location
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Overview of asset allocation across locations
+          </p>
+        </CardHeader>
+        <CardContent>
+          {locationDistributionData.length > 0 ? (
+            <div className="flex items-center justify-center h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={locationDistributionData}
+                  margin={{ 
+                    top: 20, 
+                    right: 30, 
+                    left: 20, 
+                    bottom: 60 
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="location" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    fontSize={12}
+                    stroke="#64748b"
+                  />
+                  <YAxis stroke="#64748b" />
+                  <Tooltip 
+                    formatter={(value, name) => [value, 'Total Assets']}
+                    labelFormatter={(label) => `Location: ${label}`}
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Legend />
+                  <Bar 
+                    dataKey="assets" 
+                    fill="#3b82f6" 
+                    name="Total Assets"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-48 bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20">
+              <div className="text-center">
+                <TrendingUp className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  No asset distribution data available
+                </p>
+                <p className="text-xs text-muted-foreground/70">
+                  Assets will appear here as they are added to locations
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -617,10 +617,10 @@ function AssetsRoute() {
     
     // Calculate status-based statistics from asset items
     const statusStats = {
-      available: assetItems.filter(item => item.status === 'AVAILABLE' || item.status === 'Available').length,
-      assigned: assetItems.filter(item => item.status === 'ASSIGNED' || item.status === 'Assigned').length,
-      maintenance: assetItems.filter(item => item.status === 'MAINTENANCE' || item.status === 'Maintenance').length,
-      broken: assetItems.filter(item => item.status === 'BROKEN' || item.status === 'Broken').length,
+      available: assetItems.filter(item => item.status === 'AVAILABLE').length,
+      assigned: assetItems.filter(item => item.status === 'ASSIGNED').length,
+      maintenance: assetItems.filter(item => item.status === 'MAINTENANCE').length,
+      broken: assetItems.filter(item => item.status === 'BROKEN').length,
     };
 
     return { total, statusStats };
