@@ -28,7 +28,7 @@ import {
   XCircle,
   Boxes,
 } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import * as React from "react";
 import { locationQueryOptions } from "@/queries/locations";
 import { assetsQueryOptions } from "@/queries/assets";
@@ -485,6 +485,99 @@ function DashboardComponent() {
       }))
       .sort((a, b) => b.total - a.total);
   }, [assets, assetItems, locations]);
+
+  // Category-wise Asset & Asset Items Distribution data
+  const categoryDistributionData = React.useMemo(() => {
+    if (!assets.length && !assetItems.length) return [];
+    
+    // Count assets and asset items by category
+    const categoryCounts: Record<string, { assets: number; assetItems: number }> = {};
+    
+    // Count assets by category
+    assets.forEach(asset => {
+      const categoryName = asset.categoryName || 'Unknown Category';
+      if (!categoryCounts[categoryName]) {
+        categoryCounts[categoryName] = { assets: 0, assetItems: 0 };
+      }
+      categoryCounts[categoryName].assets += 1;
+    });
+
+    // Count asset items by category (using asset_name to match with assets)
+    assetItems.forEach(item => {
+      // Find the asset for this item to get its category
+      const relatedAsset = assets.find(asset => 
+        asset.name === item.asset_name || 
+        asset.id === item.asset
+      );
+      
+      const categoryName = relatedAsset?.categoryName || 'Unknown Category';
+      if (!categoryCounts[categoryName]) {
+        categoryCounts[categoryName] = { assets: 0, assetItems: 0 };
+      }
+      categoryCounts[categoryName].assetItems += 1;
+    });
+    
+    // Convert to chart format and sort by total count descending
+    return Object.entries(categoryCounts)
+      .map(([category, counts]) => ({
+        category,
+        assets: counts.assets,
+        assetItems: counts.assetItems,
+        total: counts.assets + counts.assetItems,
+        assetsPercentage: (counts.assets + counts.assetItems) > 0 ? (counts.assets / (counts.assets + counts.assetItems)) * 100 : 0,
+        assetItemsPercentage: (counts.assets + counts.assetItems) > 0 ? (counts.assetItems / (counts.assets + counts.assetItems)) * 100 : 0
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [assets, assetItems]);
+
+  // Monthly Asset Trends Data (Polynomial Line Graph)
+  const monthlyTrendsData = React.useMemo(() => {
+    // Generate last 12 months of data
+    const months = [];
+    const currentDate = new Date();
+    
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthKey = date.toISOString().slice(0, 7); // YYYY-MM format
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      
+      // Count assets created up to this month (cumulative)
+      const assetsCount = assets.filter(asset => {
+        if (!asset.createdAt) return true; // Include assets without creation date
+        const assetDate = new Date(asset.createdAt);
+        return assetDate <= date;
+      }).length;
+      
+      // Count asset items by status for this month (based on purchase_date)
+      const itemsUpToMonth = assetItems.filter(item => {
+        if (!item.purchase_date) return true; // Include items without purchase date
+        const itemDate = new Date(item.purchase_date);
+        return itemDate <= date;
+      });
+      
+      const statusCounts = {
+        available: itemsUpToMonth.filter(item => item.status === 'AVAILABLE').length,
+        assigned: itemsUpToMonth.filter(item => item.status === 'ASSIGNED').length,
+        maintenance: itemsUpToMonth.filter(item => item.status === 'MAINTENANCE').length,
+        broken: itemsUpToMonth.filter(item => item.status === 'BROKEN').length,
+      };
+      
+      months.push({
+        month: monthName,
+        monthKey,
+        totalAssets: assetsCount,
+        totalAssetItems: itemsUpToMonth.length,
+        available: statusCounts.available,
+        assigned: statusCounts.assigned,
+        maintenance: statusCounts.maintenance,
+        broken: statusCounts.broken,
+        // Calculate polynomial trend values for smoother curves
+        trendValue: assetsCount + (itemsUpToMonth.length * 0.1), // Composite trend
+      });
+    }
+    
+    return months;
+  }, [assets, assetItems]);
 
   if (isLoading) {
     return (

@@ -8,8 +8,6 @@ import {
   Package,
   ChevronRight,
   ChevronDown,
-  FileOutput,
-  FileInput,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -33,19 +31,8 @@ const navItems: NavItem[] = [
   },
   {
     title: 'Reports',
+    href: '/reports',
     icon: FileText,
-    children: [
-      {
-        title: 'Issued',
-        href: '/reports/issued',
-        icon: FileOutput,
-      },
-      {
-        title: 'Received',
-        href: '/reports/received',
-        icon: FileInput,
-      },
-    ],
   },
   {
     title: 'Notifications',
