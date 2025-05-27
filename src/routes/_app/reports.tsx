@@ -556,6 +556,84 @@ function RouteComponent() {
         </Button>
       </div>
 
+      {/* Asset Summary Section (only for Asset Item Reports with specific asset filter) */}
+      {filters.reportType === 'assetItemReport' && filters.assetFilter && filters.assetFilter !== 'all' && filters.assetFilter !== '' && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-blue-900">
+              <Package className="h-5 w-5" />
+              <span>Asset Summary</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const selectedAsset = assets?.find((asset: any) => asset.id.toString() === filters.assetFilter);
+              if (!selectedAsset) return <p className="text-sm text-muted-foreground">Asset not found</p>;
+              
+              const quantity = 'quantity' in selectedAsset ? (selectedAsset.quantity || 1) : 1;
+              const price = Number('purchasePrice' in selectedAsset ? (selectedAsset.purchasePrice || 0) : 
+                           'price' in selectedAsset ? (selectedAsset.price || 0) : 0);
+              const totalValue = quantity * price;
+              
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Asset Name</Label>
+                    <p className="font-semibold">{selectedAsset.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Category</Label>
+                    <p className="font-medium">{selectedAsset.categoryName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Location</Label>
+                    <p className="font-medium">{selectedAsset.location || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Vendor</Label>
+                    <p className="font-medium">{selectedAsset.vendor || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Quantity</Label>
+                    <p className="font-medium">{quantity}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Price per Unit</Label>
+                    <p className="font-medium">${price.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Total Value</Label>
+                    <p className="font-semibold text-blue-700">${totalValue.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Asset Items</Label>
+                    <p className="font-semibold text-green-700">{filteredData.length} items</p>
+                  </div>
+                  {selectedAsset.description && (
+                    <div className="md:col-span-2 lg:col-span-3 xl:col-span-4">
+                      <Label className="text-xs font-medium text-muted-foreground">Description</Label>
+                      <p className="text-sm">{selectedAsset.description}</p>
+                    </div>
+                  )}
+                  {selectedAsset.purchaseDate && (
+                    <div>
+                      <Label className="text-xs font-medium text-muted-foreground">Purchase Date</Label>
+                      <p className="font-medium">{format(new Date(selectedAsset.purchaseDate), 'MMM dd, yyyy')}</p>
+                    </div>
+                  )}
+                  {selectedAsset.warrantyExpiryDate && selectedAsset.warrantyExpiryDate.trim() !== '' && (
+                    <div>
+                      <Label className="text-xs font-medium text-muted-foreground">Warranty Expiry</Label>
+                      <p className="font-medium">{format(new Date(selectedAsset.warrantyExpiryDate), 'MMM dd, yyyy')}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Preview Table - Full Width */}
       <Card>
         <CardHeader>
