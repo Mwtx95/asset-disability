@@ -11,7 +11,6 @@ const queryClient = new QueryClient();
 const router = createRouter({
   routeTree,
   defaultPreload: "intent",
-  // defaultPendingComponent: ,
   context: { isAuthenticated: undefined!, queryClient },
   defaultPreloadStaleTime: 0,
 });
