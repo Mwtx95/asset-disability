@@ -13,10 +13,12 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as AppImport } from './routes/_app'
 import { Route as AuthLoginImport } from './routes/_auth/login'
+import { Route as AppUsersImport } from './routes/_app/users'
 import { Route as AppSettingsImport } from './routes/_app/settings'
 import { Route as AppReportsImport } from './routes/_app/reports'
 import { Route as AppRegistrationImport } from './routes/_app/registration'
 import { Route as AppNotificationsImport } from './routes/_app/notifications'
+import { Route as AppLogsImport } from './routes/_app/logs'
 import { Route as AppDashboardImport } from './routes/_app/dashboard'
 import { Route as AppAssetsIndexImport } from './routes/_app/assets/index'
 import { Route as AppAssetsFixedAssetCategoryImport } from './routes/_app/assets/fixed-$assetCategory'
@@ -33,6 +35,12 @@ const AuthLoginRoute = AuthLoginImport.update({
   id: '/_auth/login',
   path: '/login',
   getParentRoute: () => rootRoute,
+} as any)
+
+const AppUsersRoute = AppUsersImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AppRoute,
 } as any)
 
 const AppSettingsRoute = AppSettingsImport.update({
@@ -56,6 +64,12 @@ const AppRegistrationRoute = AppRegistrationImport.update({
 const AppNotificationsRoute = AppNotificationsImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppLogsRoute = AppLogsImport.update({
+  id: '/logs',
+  path: '/logs',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -102,6 +116,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardImport
       parentRoute: typeof AppImport
     }
+    '/_app/logs': {
+      id: '/_app/logs'
+      path: '/logs'
+      fullPath: '/logs'
+      preLoaderRoute: typeof AppLogsImport
+      parentRoute: typeof AppImport
+    }
     '/_app/notifications': {
       id: '/_app/notifications'
       path: '/notifications'
@@ -128,6 +149,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AppSettingsImport
+      parentRoute: typeof AppImport
+    }
+    '/_app/users': {
+      id: '/_app/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AppUsersImport
       parentRoute: typeof AppImport
     }
     '/_auth/login': {
@@ -165,10 +193,12 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
+  AppLogsRoute: typeof AppLogsRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppRegistrationRoute: typeof AppRegistrationRoute
   AppReportsRoute: typeof AppReportsRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppUsersRoute: typeof AppUsersRoute
   AppAssetsAssetCategoryRoute: typeof AppAssetsAssetCategoryRoute
   AppAssetsFixedAssetCategoryRoute: typeof AppAssetsFixedAssetCategoryRoute
   AppAssetsIndexRoute: typeof AppAssetsIndexRoute
@@ -176,10 +206,12 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
+  AppLogsRoute: AppLogsRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppRegistrationRoute: AppRegistrationRoute,
   AppReportsRoute: AppReportsRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppUsersRoute: AppUsersRoute,
   AppAssetsAssetCategoryRoute: AppAssetsAssetCategoryRoute,
   AppAssetsFixedAssetCategoryRoute: AppAssetsFixedAssetCategoryRoute,
   AppAssetsIndexRoute: AppAssetsIndexRoute,
@@ -190,10 +222,12 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 export interface FileRoutesByFullPath {
   '': typeof AppRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
+  '/logs': typeof AppLogsRoute
   '/notifications': typeof AppNotificationsRoute
   '/registration': typeof AppRegistrationRoute
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
+  '/users': typeof AppUsersRoute
   '/login': typeof AuthLoginRoute
   '/assets/$assetCategory': typeof AppAssetsAssetCategoryRoute
   '/assets/fixed-$assetCategory': typeof AppAssetsFixedAssetCategoryRoute
@@ -203,10 +237,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '': typeof AppRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
+  '/logs': typeof AppLogsRoute
   '/notifications': typeof AppNotificationsRoute
   '/registration': typeof AppRegistrationRoute
   '/reports': typeof AppReportsRoute
   '/settings': typeof AppSettingsRoute
+  '/users': typeof AppUsersRoute
   '/login': typeof AuthLoginRoute
   '/assets/$assetCategory': typeof AppAssetsAssetCategoryRoute
   '/assets/fixed-$assetCategory': typeof AppAssetsFixedAssetCategoryRoute
@@ -217,10 +253,12 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/_app': typeof AppRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/logs': typeof AppLogsRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/registration': typeof AppRegistrationRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/_app/users': typeof AppUsersRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_app/assets/$assetCategory': typeof AppAssetsAssetCategoryRoute
   '/_app/assets/fixed-$assetCategory': typeof AppAssetsFixedAssetCategoryRoute
@@ -232,10 +270,12 @@ export interface FileRouteTypes {
   fullPaths:
     | ''
     | '/dashboard'
+    | '/logs'
     | '/notifications'
     | '/registration'
     | '/reports'
     | '/settings'
+    | '/users'
     | '/login'
     | '/assets/$assetCategory'
     | '/assets/fixed-$assetCategory'
@@ -244,10 +284,12 @@ export interface FileRouteTypes {
   to:
     | ''
     | '/dashboard'
+    | '/logs'
     | '/notifications'
     | '/registration'
     | '/reports'
     | '/settings'
+    | '/users'
     | '/login'
     | '/assets/$assetCategory'
     | '/assets/fixed-$assetCategory'
@@ -256,10 +298,12 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/_app/dashboard'
+    | '/_app/logs'
     | '/_app/notifications'
     | '/_app/registration'
     | '/_app/reports'
     | '/_app/settings'
+    | '/_app/users'
     | '/_auth/login'
     | '/_app/assets/$assetCategory'
     | '/_app/assets/fixed-$assetCategory'
@@ -295,10 +339,12 @@ export const routeTree = rootRoute
       "filePath": "_app.tsx",
       "children": [
         "/_app/dashboard",
+        "/_app/logs",
         "/_app/notifications",
         "/_app/registration",
         "/_app/reports",
         "/_app/settings",
+        "/_app/users",
         "/_app/assets/$assetCategory",
         "/_app/assets/fixed-$assetCategory",
         "/_app/assets/"
@@ -306,6 +352,10 @@ export const routeTree = rootRoute
     },
     "/_app/dashboard": {
       "filePath": "_app/dashboard.tsx",
+      "parent": "/_app"
+    },
+    "/_app/logs": {
+      "filePath": "_app/logs.tsx",
       "parent": "/_app"
     },
     "/_app/notifications": {
@@ -322,6 +372,10 @@ export const routeTree = rootRoute
     },
     "/_app/settings": {
       "filePath": "_app/settings.tsx",
+      "parent": "/_app"
+    },
+    "/_app/users": {
+      "filePath": "_app/users.tsx",
       "parent": "/_app"
     },
     "/_auth/login": {

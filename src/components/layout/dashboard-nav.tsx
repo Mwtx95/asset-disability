@@ -8,6 +8,8 @@ import {
   Package,
   ChevronRight,
   ChevronDown,
+  Users,
+  Activity,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -33,6 +35,16 @@ const navItems: NavItem[] = [
     title: 'Reports',
     href: '/reports',
     icon: FileText,
+  },
+  {
+    title: 'User Management',
+    href: '/users',
+    icon: Users,
+  },
+  {
+    title: 'Logs',
+    href: '/logs',
+    icon: Activity,
   },
   {
     title: 'Notifications',
