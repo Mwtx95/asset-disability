@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 const FALLBACK = '/dashboard';
 
 const loginFormSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  username: z.string().min(1, 'Please enter your username'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -52,7 +52,7 @@ function LoginRoute() {
 
   async function onSubmit(values: LoginFormValues) {
     try {
-      await login(values.email, values.password);
+      await login(values.username, values.password);
       await router.invalidate();
       navigate({ to: search.redirect || FALLBACK });
       toast.success('Login successful');
@@ -82,14 +82,14 @@ function LoginRoute() {
               >
                 <FormField
                   control={form.control}
-                  name='email'
+                  name='username'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className='text-zinc-700'>Email</FormLabel>
+                      <FormLabel className='text-zinc-700'>Username</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder='Enter your email'
-                          type='email'
+                          placeholder='Enter your username'
+                          type='text'
                           className='border-zinc-200 focus:border-zinc-400'
                           {...field}
                         />
