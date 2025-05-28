@@ -90,17 +90,43 @@ function RouteComponent() {
 
     if (filters.category && filters.category !== 'all') {
       data = data.filter((item) => {
-        if (filters.reportType === 'assetItemReport') {
-          // For asset items, check asset_details.categoryName
-          if ('asset_details' in item && item.asset_details?.categoryName) {
-            return item.asset_details.categoryName === filters.category
+        try {
+          if (filters.reportType === 'assetItemReport') {
+            // For asset items, we need to find the related asset and check its category
+            // Asset items have an 'asset' field that references the asset ID
+            if ('asset' in item && typeof item.asset === 'number') {
+              const relatedAsset = assets?.find(a => a.id === item.asset)
+              if (relatedAsset) {
+                // Use comprehensive category matching like in assets page
+                const assetAny = relatedAsset as any;
+                const category = categories?.find(c => 
+                  c.name === relatedAsset.categoryName ||
+                  c.id === assetAny.categoryId || 
+                  c.id === Number(assetAny.category) || 
+                  c.id.toString() === assetAny.category ||
+                  c.name === assetAny.category
+                );
+                return category?.name === filters.category
+              }
+            }
+            // Fallback: check if asset_details exists and has categoryName
+            if ('asset_details' in item && item.asset_details?.categoryName) {
+              return item.asset_details.categoryName === filters.category
+            }
+            return false
+          } else {
+            // For assets, use comprehensive category matching
+            const assetAny = item as any;
+            const category = categories?.find(c => 
+              c.name === (item as any).categoryName ||
+              c.id === assetAny.categoryId || 
+              c.id === Number(assetAny.category) || 
+              c.id.toString() === assetAny.category ||
+              c.name === assetAny.category
+            );
+            return category?.name === filters.category
           }
-          return false
-        } else {
-          // For assets, check categoryName directly
-          if ('categoryName' in item) {
-            return item.categoryName === filters.category
-          }
+        } catch (error) {
           return false
         }
       })
@@ -293,12 +319,12 @@ function RouteComponent() {
           const totalValue = quantity * price
           return [
             `"${asset.name || ''}"`,
-            `"${asset.categoryName || ''}"`,
-            `"${asset.location || ''}"`,
+            `"${getCategoryName(asset.categoryName, undefined, asset)}"`,
+            `"${getLocationName(asset.location)}"`,
             `"${quantity}"`,
             `"${price}"`,
             `"${totalValue}"`,
-            `"${asset.vendor || ''}"`,
+            `"${getVendorName(asset.vendor, asset.vendorId)}"`,
             `"${'purchase_date' in asset ? asset.purchase_date : asset.createdAt || ''}"`,
             `"${'warranty_date' in asset && asset.warranty_date ? asset.warranty_date : 'N/A'}"`
           ].join(',')
@@ -313,9 +339,9 @@ function RouteComponent() {
           return [
             `"${asset.name || ''}"`,
             `"${asset.description || ''}"`,
-            `"${asset.categoryName || ''}"`,
-            `"${asset.location || ''}"`,
-            `"${asset.vendor || ''}"`,
+            `"${getCategoryName(asset.categoryName, undefined, asset)}"`,
+            `"${getLocationName(asset.location)}"`,
+            `"${getVendorName(asset.vendor, asset.vendorId)}"`,
             `"${asset.createdAt || ''}"`
           ].join(',')
         })
@@ -339,6 +365,77 @@ function RouteComponent() {
       case 'BROKEN': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  const getLocationName = (locationValue: any) => {
+    if (!locationValue) return 'N/A'
+    
+    // If it's already a string (name), return it
+    if (typeof locationValue === 'string') return locationValue
+    
+    // If it's a number (ID), look up the name
+    if (typeof locationValue === 'number') {
+      const location = locations?.find((loc: any) => loc.id === locationValue)
+      return location?.name || 'N/A'
+    }
+    
+    return 'N/A'
+  }
+
+  const getVendorName = (vendorValue: any, vendorId?: any) => {
+    // Check vendorId first (if provided)
+    if (vendorId) {
+      const vendor = vendors?.find((v: any) => v.id === vendorId)
+      if (vendor) return vendor.name
+    }
+    
+    if (!vendorValue) return 'N/A'
+    
+    // If it's already a string (name), return it
+    if (typeof vendorValue === 'string') return vendorValue
+    
+    // If it's a number (ID), look up the name
+    if (typeof vendorValue === 'number') {
+      const vendor = vendors?.find((v: any) => v.id === vendorValue)
+      return vendor?.name || 'N/A'
+    }
+    
+    return 'N/A'
+  }
+
+  const getCategoryName = (categoryValue: any, categoryId?: any, asset?: any) => {
+    // Check categoryId first (if provided)
+    if (categoryId) {
+      const category = categories?.find((c: any) => c.id === categoryId)
+      if (category) return category.name
+    }
+    
+    // Check for asset-specific category fields if asset is provided
+    if (asset) {
+      // Try multiple possible category field names
+      const assetAny = asset as any
+      const category = categories?.find((c: any) => 
+        c.name === asset.categoryName ||
+        c.id === assetAny.categoryId || 
+        c.id === Number(assetAny.category) || 
+        c.id.toString() === assetAny.category ||
+        c.name === assetAny.category
+      )
+      if (category) return category.name
+    }
+    
+    if (!categoryValue) return 'N/A'
+    
+    // If it's already a string (name), return it
+    if (typeof categoryValue === 'string') return categoryValue
+    
+    // If it's a number (ID), look up the name
+    if (typeof categoryValue === 'number') {
+      const category = categories?.find((c: any) => c.id === categoryValue)
+      return category?.name || 'N/A'
+    }
+    
+    return 'N/A'
   }
 
   return (
@@ -587,11 +684,11 @@ function RouteComponent() {
                   </div>
                   <div>
                     <Label className="text-xs font-medium text-muted-foreground">Location</Label>
-                    <p className="font-medium">{selectedAsset.location || 'N/A'}</p>
+                    <p className="font-medium">{getLocationName(selectedAsset.location)}</p>
                   </div>
                   <div>
                     <Label className="text-xs font-medium text-muted-foreground">Vendor</Label>
-                    <p className="font-medium">{selectedAsset.vendor || 'N/A'}</p>
+                    <p className="font-medium">{getVendorName(selectedAsset.vendor, selectedAsset.vendorId)}</p>
                   </div>
                   <div>
                     <Label className="text-xs font-medium text-muted-foreground">Quantity</Label>
@@ -712,8 +809,8 @@ function RouteComponent() {
                       ) : filters.reportType === 'assets' ? (
                         <>
                           <TableCell className="font-medium">{'name' in item ? item.name : ''}</TableCell>
-                          <TableCell>{'categoryName' in item ? item.categoryName : ''}</TableCell>
-                          <TableCell>{'location' in item ? item.location : ''}</TableCell>
+                          <TableCell>{getCategoryName('categoryName' in item ? item.categoryName : '', undefined, item)}</TableCell>
+                          <TableCell>{getLocationName('location' in item ? item.location : '')}</TableCell>
                           <TableCell>
                             {'quantity' in item ? item.quantity || 1 : 1}
                           </TableCell>
@@ -730,7 +827,7 @@ function RouteComponent() {
                               return `$${totalValue.toLocaleString()}`;
                             })()}
                           </TableCell>
-                          <TableCell>{'vendor' in item ? item.vendor || 'N/A' : 'N/A'}</TableCell>
+                          <TableCell>{getVendorName('vendor' in item ? item.vendor : '', 'vendorId' in item ? item.vendorId : '')}</TableCell>
                           <TableCell>
                             {'purchase_date' in item ? format(new Date(item.purchase_date), 'MMM dd, yyyy') : 
                              'createdAt' in item ? format(new Date(item.createdAt), 'MMM dd, yyyy') : ''}
