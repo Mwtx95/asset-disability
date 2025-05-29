@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import {
   useSuspenseQuery,
   useMutation,
@@ -75,14 +75,21 @@ import {
   reactivateUser,
 } from '@/queries/users'
 import { locationQueryOptions, type Location } from '@/queries/locations'
+import useAuthStore from '@/stores/auth'
 
 export const Route = createFileRoute('/_app/users')({
-  loader: ({ context: { queryClient } }) =>
-    Promise.all([
-      queryClient.ensureQueryData(usersQueryOptions),
-      queryClient.ensureQueryData(userRolesQueryOptions),
-      queryClient.ensureQueryData(locationQueryOptions),
-    ]),
+  beforeLoad: ({ context }) => {
+    const user = useAuthStore.getState().user
+    if (!user || user.role !== 'super_admin') {
+      throw redirect({
+        to: '/dashboard',
+        search: {
+          message:
+            'Access denied. You do not have permission to view user management.',
+        },
+      })
+    }
+  },
   component: RouteComponent,
 })
 
@@ -113,7 +120,7 @@ function RouteComponent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       setAddDialogOpen(false)
-            setFormData({})
+      setFormData({})
       toast.success('User created successfully')
     },
     onError: (error) => {
@@ -133,7 +140,7 @@ function RouteComponent() {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       setEditDialogOpen(false)
       setSelectedUser(null)
-            setFormData({})
+      setFormData({})
       toast.success('User updated successfully')
     },
     onError: (error) => {
@@ -144,7 +151,7 @@ function RouteComponent() {
   const deactivateUserMutation = useMutation({
     mutationFn: deactivateUser,
     onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.invalidateQueries({ queryKey: ['users'] })
       toast.success('User deactivated successfully')
     },
     onError: (error) => {
@@ -154,7 +161,7 @@ function RouteComponent() {
 
   const reactivateUserMutation = useMutation({
     mutationFn: reactivateUser,
-        onSuccess: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       toast.success('User reactivated successfully')
     },

@@ -12,12 +12,14 @@ import {
   Activity,
 } from 'lucide-react';
 import { useState } from 'react';
+import useAuthStore from '@/stores/auth';
 
 interface NavItem {
   title: string;
   href?: string;
   icon: React.ComponentType<{ className?: string }>;
   children?: NavItem[];
+  requiredRole?: 'super_admin' | 'branch_admin' | 'all';
 }
 
 const navItems: NavItem[] = [
@@ -25,36 +27,43 @@ const navItems: NavItem[] = [
     title: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
+    requiredRole: 'all',
   },
   {
     title: 'Assets',
     href: '/assets',
     icon: Package,
+    requiredRole: 'all',
   },
   {
     title: 'Reports',
     href: '/reports',
     icon: FileText,
+    requiredRole: 'all',
   },
   {
     title: 'User Management',
     href: '/users',
     icon: Users,
+    requiredRole: 'super_admin',
   },
   {
     title: 'Logs',
     href: '/logs',
     icon: Activity,
+    requiredRole: 'super_admin',
   },
   {
     title: 'Notifications',
     href: '/notifications',
     icon: Bell,
+    requiredRole: 'all',
   },
   {
     title: 'Settings',
     href: '/settings',
     icon: Settings,
+    requiredRole: 'all',
   },
 ];
 
@@ -62,6 +71,7 @@ export function DashboardNav() {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const router = useRouterState();
   const currentPath = router.location.pathname;
+  const { user } = useAuthStore();
 
   const toggleExpand = (title: string) => {
     setExpandedItems(prev =>
@@ -75,9 +85,18 @@ export function DashboardNav() {
     return currentPath === href || currentPath.startsWith(href + '/');
   };
 
+  // Filter nav items based on user role
+  const filteredNavItems = navItems.filter(item => {
+    if (!user) return false;
+    if (item.requiredRole === 'all') return true;
+    if (item.requiredRole === 'super_admin') return user.role === 'super_admin';
+    if (item.requiredRole === 'branch_admin') return user.role === 'branch_admin';
+    return false;
+  });
+
   return (
     <nav className='space-y-1 p-4'>
-      {navItems.map(item => (
+      {filteredNavItems.map(item => (
         <div key={item.title}>
           {item.href ? (
             <Link

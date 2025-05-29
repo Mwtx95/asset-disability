@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,8 +22,20 @@ import {
   Shield
 } from 'lucide-react';
 import { useState } from 'react';
+import useAuthStore from '@/stores/auth';
 
 export const Route = createFileRoute('/_app/logs')({
+  beforeLoad: ({ context }) => {
+    const user = useAuthStore.getState().user;
+    if (!user || user.role !== 'super_admin') {
+      throw redirect({
+        to: '/dashboard',
+        search: {
+          message: 'Access denied. You do not have permission to view logs.',
+        },
+      });
+    }
+  },
   component: RouteComponent,
 });
 

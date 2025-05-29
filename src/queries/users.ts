@@ -85,6 +85,15 @@ export const currentUserQueryOptions = queryOptions({
   },
 });
 
+// Get all user activities (logs) - Only accessible by super admin
+export const allUserActivitiesQueryOptions = queryOptions({
+  queryKey: ['all-user-activities'],
+  queryFn: async (): Promise<UserActivity[]> => {
+    const response = await axios.get('/users/activities/');
+    return response.data.results || response.data;
+  },
+});
+
 // Get user activities
 export const userActivitiesQueryOptions = (userId: number) => queryOptions({
   queryKey: ['user-activities', userId],
