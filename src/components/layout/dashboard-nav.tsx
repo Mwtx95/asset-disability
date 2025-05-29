@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Link } from '@tanstack/react-router';
+import { Link, useRouterState } from '@tanstack/react-router';
 import {
   LayoutDashboard,
   Settings,
@@ -60,6 +60,8 @@ const navItems: NavItem[] = [
 
 export function DashboardNav() {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const router = useRouterState();
+  const currentPath = router.location.pathname;
 
   const toggleExpand = (title: string) => {
     setExpandedItems(prev =>
@@ -67,6 +69,10 @@ export function DashboardNav() {
         ? prev.filter(item => item !== title)
         : [...prev, title]
     );
+  };
+
+  const isActive = (href: string) => {
+    return currentPath === href || currentPath.startsWith(href + '/');
   };
 
   return (
@@ -77,10 +83,16 @@ export function DashboardNav() {
             <Link
               to={item.href}
               className={cn(
-                'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                'group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                isActive(item.href)
+                  ? 'bg-green-100 text-green-700 border-r-2 border-green-500'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               )}
             >
-              <item.icon className='mr-3 h-5 w-5 flex-shrink-0' />
+              <item.icon className={cn(
+                'mr-3 h-5 w-5 flex-shrink-0',
+                isActive(item.href) ? 'text-green-600' : ''
+              )} />
               {item.title}
             </Link>
           ) : (
@@ -106,10 +118,16 @@ export function DashboardNav() {
                       key={child.href}
                       to={child.href!}
                       className={cn(
-                        'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        'group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                        isActive(child.href!)
+                          ? 'bg-green-50 text-green-700 border-l-2 border-green-400 ml-2'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       )}
                     >
-                      <child.icon className='mr-3 h-5 w-5 flex-shrink-0' />
+                      <child.icon className={cn(
+                        'mr-3 h-5 w-5 flex-shrink-0',
+                        isActive(child.href!) ? 'text-green-600' : ''
+                      )} />
                       {child.title}
                     </Link>
                   ))}

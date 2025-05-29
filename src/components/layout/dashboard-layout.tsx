@@ -33,8 +33,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         return 'Super Admin';
       case 'branch_admin':
         return 'Branch Admin';
-      case 'staff':
-        return 'Staff';
       default:
         return role;
     }
@@ -125,16 +123,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className='grid lg:grid-cols-[250px_1fr]'>
           <aside
             className={cn(
-              'fixed shadow left-0 z-40 h-full w-64 transform border-r bg-white transition-transform dark:bg-gray-950',
-              'lg:static lg:translate-x-0',
+              'fixed shadow left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 transform border-r bg-white transition-transform dark:bg-gray-950',
+              'lg:sticky lg:top-16 lg:translate-x-0',
               isOpen ? 'translate-x-0' : '-translate-x-full'
             )}
           >
-            <ScrollArea className='h-[calc(100vh-4rem)]'>
+            <ScrollArea className='h-full'>
               <DashboardNav />
             </ScrollArea>
           </aside>
-          <main className='flex-1 overflow-y-auto p-6 bg-slate-50'>
+          <main className='flex-1 overflow-y-auto p-6 bg-slate-50 lg:ml-0'>
             {children}
           </main>
         </div>

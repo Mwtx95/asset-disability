@@ -195,7 +195,6 @@ function RouteComponent() {
     const variants: Record<string, string> = {
       'Super Admin': 'bg-red-100 text-red-800',
       'Branch Admin': 'bg-blue-100 text-blue-800',
-      Staff: 'bg-gray-100 text-gray-800',
     }
 
     return (
@@ -711,13 +710,6 @@ function RouteComponent() {
                           <Badge variant="outline">View Branch Reports</Badge>
                           <Badge variant="outline">Edit Records</Badge>
                           <Badge variant="outline">Manage Branch Users</Badge>
-                        </>
-                      )}
-                      {role.name === 'staff' && (
-                        <>
-                          <Badge variant="outline">View Assets</Badge>
-                          <Badge variant="outline">View Reports</Badge>
-                          <Badge variant="outline">Basic Access</Badge>
                         </>
                       )}
                     </div>
