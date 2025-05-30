@@ -28,6 +28,7 @@ import { assetItemsQueryOptions, type AssetItem } from '@/queries/assetsItems'
 import { categoriesStatsQueryOptions } from '@/queries/categories'
 import { locationQueryOptions } from '@/queries/locations'
 import { vendorsQueryOptions } from '@/queries/vendors'
+import useAuthStore from '@/stores/auth'
 import { format } from 'date-fns'
 
 export const Route = createFileRoute('/_app/reports')({
@@ -46,6 +47,8 @@ interface FilterState {
 }
 
 function RouteComponent() {
+  const { user } = useAuthStore();
+  
   const [filters, setFilters] = React.useState<FilterState>({
     reportType: '', // Start with empty to show placeholder
     dateRange: {},
@@ -66,6 +69,25 @@ function RouteComponent() {
   const { data: categories } = useSuspenseQuery(categoriesStatsQueryOptions)
   const { data: locations } = useSuspenseQuery(locationQueryOptions)
   const { data: vendors } = useSuspenseQuery(vendorsQueryOptions)
+
+  // Check if user is branch admin and filter locations
+  const isBranchAdmin = user?.role === 'branch_admin';
+  const availableLocations = isBranchAdmin && user?.branch 
+    ? locations.filter(location => location.id === user.branch.toString())
+    : locations;
+
+  // Auto-set location filter for branch admins
+  React.useEffect(() => {
+    if (isBranchAdmin && user?.branch && availableLocations.length > 0) {
+      const branchLocation = availableLocations[0];
+      if (branchLocation) {
+        setFilters(prev => ({
+          ...prev,
+          location: branchLocation.id.toString()
+        }));
+      }
+    }
+  }, [isBranchAdmin, user?.branch, availableLocations]);
 
   // Filter data based on current filters
   const filteredData = React.useMemo(() => {
@@ -527,14 +549,19 @@ function RouteComponent() {
         {/* Location Filter */}
         <Select
           value={filters.location}
-          onValueChange={(value) => handleFilterChange('location', value)}
+          onValueChange={(value) => {
+            if (!isBranchAdmin) {
+              handleFilterChange('location', value);
+            }
+          }}
+          disabled={isBranchAdmin}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select location" />
+            <SelectValue placeholder={isBranchAdmin ? "Location (Auto-selected)" : "Select location"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Locations</SelectItem>
-            {locations?.map((location: any) => (
+            {!isBranchAdmin && <SelectItem value="all">All Locations</SelectItem>}
+            {availableLocations?.map((location: any) => (
               <SelectItem key={location.id} value={location.id.toString()}>
                 <div className="flex items-center space-x-2">
                   <MapPin className="h-4 w-4" />

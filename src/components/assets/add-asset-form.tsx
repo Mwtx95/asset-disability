@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { categoriesQueryOptions } from "@/queries/categories";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
+import useAuthStore from "@/stores/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useMutation,
@@ -28,7 +29,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import axios from "axios";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -59,9 +60,18 @@ interface AddAssetFormProps {
 export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
   const queryClient = useQueryClient();
   const [isGeneratingSerials, setIsGeneratingSerials] = useState(false);
+  const { user } = useAuthStore();
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions);
   const { data: locations } = useSuspenseQuery(locationQueryOptions);
   const { data: vendors } = useSuspenseQuery(vendorsQueryOptions);
+
+  // Check if user is branch admin
+  const isBranchAdmin = user?.role === 'branch_admin';
+  
+  // Filter locations based on user role
+  const availableLocations = isBranchAdmin && user?.branch 
+    ? locations.filter(location => location.id === user.branch.toString())
+    : locations;
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -79,6 +89,20 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
       generateSerialNumbers: false,
     },
   });
+
+  // Set default location for branch admin users
+  useEffect(() => {
+    if (isBranchAdmin && user?.branch) {
+      form.setValue('location', user.branch);
+    }
+  }, [isBranchAdmin, user?.branch, form]);
+
+  // Watch for form changes to debug
+  const watchedLocation = form.watch('location');
+  console.log('Current form location value:', watchedLocation);
+  console.log('Is branch admin:', isBranchAdmin);
+  console.log('User branch:', user?.branch);
+  console.log('Available locations:', availableLocations);
 
   const mutation = useMutation({
     mutationFn: async (values: FormSchema) => {
@@ -221,14 +245,23 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Location</FormLabel>
-                <Select onValueChange={field.onChange}>
+                <Select 
+                  onValueChange={(value) => {
+                    console.log('Location change attempted:', value, 'Is disabled:', isBranchAdmin);
+                    if (!isBranchAdmin) {
+                      field.onChange(value);
+                    }
+                  }}
+                  disabled={isBranchAdmin}
+                  value={field.value?.toString()}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a location" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {locations.map((location) => (
+                    {availableLocations.map((location) => (
                       <SelectItem
                         key={location.id}
                         value={location.id.toString()}
@@ -238,6 +271,11 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                {isBranchAdmin && (
+                  <p className="text-xs text-muted-foreground">
+                    Location is automatically set to your branch
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )}

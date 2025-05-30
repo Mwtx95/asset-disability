@@ -39,6 +39,7 @@ import { AssetItem, assetItemsByAssetIdQueryOptions, assetItemsQueryOptions } fr
 import { categoriesStatsQueryOptions } from "@/queries/categories";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
+import useAuthStore from "@/stores/auth";
 import { useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -56,7 +57,7 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { z } from "zod";
 
 interface AssetFilters {
@@ -99,6 +100,18 @@ function AssetsRoute() {
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
   const { data: vendors = [] } = useSuspenseQuery(vendorsQueryOptions);
 
+  // Auth store for location filtering
+  const { user } = useAuthStore();
+  const isBranchAdmin = user?.role === 'branch_admin';
+  
+  // Filter locations based on user role
+  const availableLocations = useMemo(() => {
+    if (isBranchAdmin && user?.branch) {
+      return locations.filter(location => location.id === user.branch.toString());
+    }
+    return locations;
+  }, [locations, isBranchAdmin, user?.branch]);
+
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(new Set());
@@ -122,6 +135,19 @@ function AssetsRoute() {
     location: "all",
     vendor: "all",
   });
+
+  // Auto-set location filter for branch admins
+  useEffect(() => {
+    if (isBranchAdmin && user?.branch && availableLocations.length > 0) {
+      const branchLocation = availableLocations[0];
+      if (branchLocation) {
+        setFilters(prev => ({
+          ...prev,
+          location: branchLocation.id
+        }));
+      }
+    }
+  }, [isBranchAdmin, user?.branch, availableLocations]);
 
   // Filtered and sorted data
   const filteredAndSortedAssets = useMemo(() => {
@@ -329,13 +355,13 @@ function AssetsRoute() {
     if (wasSelected) {
       newAssetItemSelection.delete(itemIdentifier);
       // If this was the last selected item for this asset, deselect the asset too
-      newAssetSelection.delete(item.assetId);
+      newAssetSelection.delete(item.asset);
     } else {
       newAssetItemSelection.add(itemIdentifier);
       
       // Check if all asset items for this asset are now selected
       const assetItems = queryClient.getQueryData(
-        assetItemsByAssetIdQueryOptions(item.assetId).queryKey
+        assetItemsByAssetIdQueryOptions(item.asset).queryKey
       ) as AssetItem[] || [];
       
       const allItemsSelected = assetItems.length > 0 && assetItems.every(assetItem => {
@@ -344,7 +370,7 @@ function AssetsRoute() {
       });
       
       if (allItemsSelected) {
-        newAssetSelection.add(item.assetId);
+        newAssetSelection.add(item.asset);
       }
     }
     
@@ -455,7 +481,6 @@ function AssetsRoute() {
                       e.stopPropagation();
                       // Handle assign action for available items
                       // This will be implemented in future
-                      console.log('Assign item:', item.serial_number);
                     }}
                   >
                     <Send className="h-3 w-3 mr-1" />
@@ -547,7 +572,6 @@ function AssetsRoute() {
                         e.stopPropagation();
                         // Handle assign action for available items
                         // This will be implemented in future
-                        console.log('Assign item in dropdown:', item.serial_number);
                       }}
                     >
                       <Send className="h-3 w-3 mr-1" />
@@ -734,13 +758,14 @@ function AssetsRoute() {
             <Select
               value={filters.location}
               onValueChange={(value) => setFilters({ ...filters, location: value })}
+              disabled={isBranchAdmin}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Location" />
+                <SelectValue placeholder={isBranchAdmin ? "Location (Auto-selected)" : "Location"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                {locations.map((location) => (
+                {!isBranchAdmin && <SelectItem value="all">All Locations</SelectItem>}
+                {availableLocations.map((location) => (
                   <SelectItem key={location.id} value={location.id}>
                     {location.name}
                   </SelectItem>
@@ -1320,18 +1345,23 @@ function AssetsRoute() {
               <div className="space-y-3">
                 <div>
                   <label className="text-sm font-medium">Destination</label>
-                  <Select>
+                  <Select disabled={isBranchAdmin}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select destination..." />
+                      <SelectValue placeholder={isBranchAdmin ? "Transfer not available (Branch Admin)" : "Select destination..."} />
                     </SelectTrigger>
                     <SelectContent>
-                      {locations.map((location) => (
+                      {availableLocations.map((location) => (
                         <SelectItem key={location.id} value={location.id.toString()}>
                           {location.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {isBranchAdmin && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Branch admins can only manage assets within their assigned location.
+                    </p>
+                  )}
                 </div>
                 
                 <div>
@@ -1345,8 +1375,6 @@ function AssetsRoute() {
                   className="flex-1"
                   onClick={() => {
                     // Handle asset transfer
-                    console.log('Transferring assets:', Array.from(selectedAssets));
-                    console.log('Transferring asset items:', Array.from(selectedAssetItems));
                     setIsIssueDialogOpen(false);
                     setSelectedAssets(new Set());
                     setSelectedAssetItems(new Set());

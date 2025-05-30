@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AddAssetItemForm } from "@/components/assets/add-asset-item-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +41,7 @@ import {
 } from "@/queries/assetsItems";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
+import useAuthStore from "@/stores/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useMutation,
@@ -90,12 +91,21 @@ function AssetDetailsRoute() {
   );
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
   const { data: vendors = [] } = useSuspenseQuery(vendorsQueryOptions);
+  const { user } = useAuthStore();
   const transferAsset = useTransferAssetMutation();
   const queryClient = useQueryClient();
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedItemForEdit, setSelectedItemForEdit] = useState<any>(null);
+
+  // Check if user is branch admin
+  const isBranchAdmin = user?.role === 'branch_admin';
+  
+  // Filter locations based on user role
+  const availableLocations = isBranchAdmin && user?.branch 
+    ? locations.filter(location => location.id === user.branch.toString())
+    : locations;
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
@@ -122,7 +132,7 @@ function AssetDetailsRoute() {
     // Reset form with the item's current values
     editForm.reset({
       status: item.status,
-      location: item.locationId,
+      location: isBranchAdmin && user?.branch ? user.branch : item.locationId,
       vendor: item.vendorId,
       price: item.price,
       serial_number: item.serial_number,
@@ -141,7 +151,7 @@ function AssetDetailsRoute() {
       const updateData = {
         ...values,
         id: selectedItemForEdit.id,
-        asset: selectedItemForEdit.assetId,
+        asset: selectedItemForEdit.asset,
       };
 
       const { data } = await axios.put(
@@ -178,11 +188,11 @@ function AssetDetailsRoute() {
   const groupedAssets = categoryAssets.reduce(
     (acc, asset) => {
       // Create a unique key combining asset ID and name
-      const assetKey = `${asset.assetId}_${asset.asset_name}`;
+      const assetKey = `${asset.asset}_${asset.asset_name}`;
 
       if (!acc[assetKey]) {
         acc[assetKey] = {
-          id: asset.assetId,
+          id: asset.asset,
           name: asset.asset_name,
           quantity: 0,
           status: asset.status,
@@ -294,13 +304,13 @@ function AssetDetailsRoute() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Vendor:</span>
                       <span className="font-medium">
-                        {getVendorName(asset.items[0].vendorId)}
+                        {getVendorName(asset.items[0].vendor)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Purchase Date:</span>
                       <span className="font-medium">
-                        {formatDate(asset.items[0].purchaseDate?.toString())}
+                        {formatDate(asset.items[0].purchase_date?.toString())}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -315,7 +325,7 @@ function AssetDetailsRoute() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Warranty Expiry:</span>
                       <span className="font-medium">
-                        {formatDate(asset.items[0].warrantyExpiryDate?.toString())}
+                        {formatDate(asset.items[0].warranty_expiry_date?.toString())}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -404,7 +414,12 @@ function AssetDetailsRoute() {
                   <FormItem>
                     <FormLabel>New Location</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => {
+                        if (!isBranchAdmin) {
+                          field.onChange(value);
+                        }
+                      }}
+                      disabled={isBranchAdmin}
                       defaultValue={field.value?.toString()}
                     >
                       <FormControl>
@@ -413,7 +428,7 @@ function AssetDetailsRoute() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {locations.map((location) => (
+                        {availableLocations.map((location) => (
                           <SelectItem
                             key={location.id}
                             value={location.id.toString()}
@@ -423,6 +438,11 @@ function AssetDetailsRoute() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {isBranchAdmin && (
+                      <p className="text-xs text-muted-foreground">
+                        Location is automatically set to your branch
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -481,7 +501,12 @@ function AssetDetailsRoute() {
                   <FormItem>
                     <FormLabel>Location</FormLabel>
                     <Select 
-                      onValueChange={(value) => field.onChange(parseInt(value))} 
+                      onValueChange={(value) => {
+                        if (!isBranchAdmin) {
+                          field.onChange(parseInt(value));
+                        }
+                      }} 
+                      disabled={isBranchAdmin}
                       defaultValue={field.value?.toString()}
                     >
                       <FormControl>
@@ -490,13 +515,18 @@ function AssetDetailsRoute() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {locations.map((location) => (
+                        {availableLocations.map((location) => (
                           <SelectItem key={location.id} value={location.id.toString()}>
                             {location.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {isBranchAdmin && (
+                      <p className="text-xs text-muted-foreground">
+                        Location is automatically set to your branch
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

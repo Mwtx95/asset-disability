@@ -1,0 +1,5 @@
+# This file indicates this project uses bun as the package manager
+# Use bun commands instead of npm:
+# - bun install (instead of npm install)
+# - bun run <script> (instead of npm run <script>)
+# - bunx <package> (instead of npx <package>)
