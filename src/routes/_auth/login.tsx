@@ -65,6 +65,25 @@ function LoginRoute() {
   return (
     <div className='min-h-screen flex items-center justify-center bg-zinc-50'>
       <div className='w-full max-w-md p-4 space-y-4'>
+        {/* Organization Header */}
+        <div className='text-center space-y-4 mb-6'>
+          <div className='flex justify-center'>
+            <img 
+              src="/img/dda.png" 
+              alt="ZNDC Logo" 
+              className='h-20 w-20 object-contain'
+            />
+          </div>
+          <div className='space-y-1'>
+            <h1 className='text-lg font-bold text-zinc-900 uppercase tracking-wide'>
+              ZANZIBAR NATIONAL DISABILITY COUNCIL
+            </h1>
+            <p className='text-sm text-zinc-600 font-medium'>
+              Asset Management System
+            </p>
+          </div>
+        </div>
+
         <Card className='border-zinc-200 shadow-lg'>
           <CardHeader className='space-y-2'>
             <CardTitle className='text-2xl font-bold text-center text-zinc-900'>
