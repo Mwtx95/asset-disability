@@ -93,6 +93,38 @@ export const Route = createFileRoute('/_app/users')({
   component: RouteComponent,
 })
 
+// Helper function to get permissions for each role
+const getRolePermissions = (roleName: string): string[] => {
+  switch (roleName) {
+    case 'super_admin':
+      return [
+        'Full System Access',
+        'User Management',
+        'System Logs',
+        'Location Management',
+        'Vendor Management',
+        'Category Management',
+        'Asset Management',
+        'Transfer Approvals',
+        'Settings Configuration',
+        'Email Settings',
+        'Notification Settings',
+      ]
+    case 'branch_admin':
+      return [
+        'Branch Asset Management',
+        'Asset Transfers',
+        'Asset Assignments',
+        'Asset Maintenance',
+        'Email Settings',
+        'Notification Settings',
+        'Branch Reports',
+      ]
+    default:
+      return ['Basic Access']
+  }
+}
+
 function RouteComponent() {
   const queryClient = useQueryClient()
 
@@ -701,24 +733,11 @@ function RouteComponent() {
                       </p>
                     )}
                     <div className="flex flex-wrap gap-2">
-                      {role.name === 'super_admin' && (
-                        <>
-                          <Badge variant="outline">Manage Users</Badge>
-                          <Badge variant="outline">Manage Assets</Badge>
-                          <Badge variant="outline">View Reports</Badge>
-                          <Badge variant="outline">System Settings</Badge>
-                          <Badge variant="outline">All Branches</Badge>
-                          <Badge variant="outline">Delete Records</Badge>
-                        </>
-                      )}
-                      {role.name === 'branch_admin' && (
-                        <>
-                          <Badge variant="outline">Manage Branch Assets</Badge>
-                          <Badge variant="outline">View Branch Reports</Badge>
-                          <Badge variant="outline">Edit Records</Badge>
-                          <Badge variant="outline">Manage Branch Users</Badge>
-                        </>
-                      )}
+                      {getRolePermissions(role.name).map((permission, index) => (
+                        <Badge key={index} variant="outline">
+                          {permission}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
                 ))}
