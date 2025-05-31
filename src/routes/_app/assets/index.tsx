@@ -39,6 +39,15 @@ import { AssetItem, assetItemsByAssetIdQueryOptions, assetItemsQueryOptions } fr
 import { categoriesStatsQueryOptions } from "@/queries/categories";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
+import { 
+  incomingTransfersQueryOptions, 
+  outgoingTransfersQueryOptions, 
+  useApproveTransfer, 
+  useDeclineTransfer,
+  useCreateTransfer,
+  getStatusBadgeVariant,
+  getStatusDisplayName 
+} from "@/queries/transfers";
 import useAuthStore from "@/stores/auth";
 import { useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -59,6 +68,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { z } from "zod";
+import { toast } from "sonner";
 
 interface AssetFilters {
   category: string;
@@ -99,6 +109,15 @@ function AssetsRoute() {
   const { data: assetItems = [] } = useSuspenseQuery(assetItemsQueryOptions);
   const { data: locations = [] } = useSuspenseQuery(locationQueryOptions);
   const { data: vendors = [] } = useSuspenseQuery(vendorsQueryOptions);
+  
+  // Transfer queries
+  const { data: incomingTransfers = [] } = useQuery(incomingTransfersQueryOptions);
+  const { data: outgoingTransfers = [] } = useQuery(outgoingTransfersQueryOptions);
+  
+  // Transfer mutations
+  const approveTransfer = useApproveTransfer();
+  const declineTransfer = useDeclineTransfer();
+  const createTransfer = useCreateTransfer();
 
   // Auth store for location filtering
   const { user } = useAuthStore();
@@ -125,6 +144,12 @@ function AssetsRoute() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedAssetItemForEdit, setSelectedAssetItemForEdit] = useState<AssetItem | null>(null);
   const [isEditAssetItemDialogOpen, setIsEditAssetItemDialogOpen] = useState(false);
+  const [isIncomingDialogOpen, setIsIncomingDialogOpen] = useState(false);
+  const [isOutgoingDialogOpen, setIsOutgoingDialogOpen] = useState(false);
+  const [transferDestination, setTransferDestination] = useState("");
+  const [transferNotes, setTransferNotes] = useState("");
+  const [selectedTransferForDetails, setSelectedTransferForDetails] = useState<any>(null);
+  const [isTransferDetailsDialogOpen, setIsTransferDetailsDialogOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState<{field: string, direction: "asc" | "desc"}>({
     field: "name",
     direction: "asc"
@@ -403,6 +428,11 @@ function AssetsRoute() {
     setIsEditAssetItemDialogOpen(true);
   };
 
+  const handleViewTransferDetails = (transfer: any) => {
+    setSelectedTransferForDetails(transfer);
+    setIsTransferDetailsDialogOpen(true);
+  };
+
   // Asset Items Row Component
   const AssetItemsRow = ({ assetId }: { assetId: number }) => {
     const { data: assetItems = [], isLoading, error } = useQuery(assetItemsByAssetIdQueryOptions(assetId));
@@ -659,6 +689,20 @@ function AssetsRoute() {
         </div>
         
         <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsIncomingDialogOpen(true)}
+          >
+            <Package className="w-4 h-4 mr-2" />
+            Incoming Assets
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setIsOutgoingDialogOpen(true)}
+          >
+            <Send className="w-4 h-4 mr-2" />
+            Outgoing Assets
+          </Button>
           <Button onClick={() => setIsAddModalOpen(true)}>
             <PlusCircle className="w-4 h-4 mr-2" />
             Add Asset
@@ -1345,16 +1389,22 @@ function AssetsRoute() {
               <div className="space-y-3">
                 <div>
                   <label className="text-sm font-medium">Destination</label>
-                  <Select disabled={isBranchAdmin}>
+                  <Select 
+                    disabled={isBranchAdmin}
+                    value={transferDestination}
+                    onValueChange={setTransferDestination}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={isBranchAdmin ? "Transfer not available (Branch Admin)" : "Select destination..."} />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableLocations.map((location) => (
-                        <SelectItem key={location.id} value={location.id.toString()}>
-                          {location.name}
-                        </SelectItem>
-                      ))}
+                      {locations
+                        .filter(location => !isBranchAdmin || location.id !== user?.branch?.toString())
+                        .map((location) => (
+                          <SelectItem key={location.id} value={location.id.toString()}>
+                            {location.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   {isBranchAdmin && (
@@ -1366,31 +1416,492 @@ function AssetsRoute() {
                 
                 <div>
                   <label className="text-sm font-medium">Notes (Optional)</label>
-                  <Input placeholder="Add notes for this transaction..." />
+                  <Input 
+                    placeholder="Add notes for this transaction..." 
+                    value={transferNotes}
+                    onChange={(e) => setTransferNotes(e.target.value)}
+                  />
                 </div>
               </div>
               
               <div className="flex gap-2 pt-4">
                 <Button 
                   className="flex-1"
-                  onClick={() => {
-                    // Handle asset transfer
-                    setIsIssueDialogOpen(false);
-                    setSelectedAssets(new Set());
-                    setSelectedAssetItems(new Set());
+                  disabled={!transferDestination || isBranchAdmin || createTransfer.isPending}
+                  onClick={async () => {
+                    if (!transferDestination) return;
+                    
+                    try {
+                      // Create transfers for selected asset items
+                      const transferPromises = Array.from(selectedAssetItems).map(async (itemId) => {
+                        // Find the asset item details
+                        let assetItemId: number | null = null;
+                        
+                        // Search through all loaded asset items to find the actual item
+                        for (const asset of assets) {
+                          const assetItems = queryClient.getQueryData(
+                            assetItemsByAssetIdQueryOptions(asset.id).queryKey
+                          ) as AssetItem[] || [];
+                          
+                          const foundItem = assetItems.find((item: any) => {
+                            const itemIdentifier = item._computedId || item.serial_number || `${item.asset}_${item.serial_number}`;
+                            return itemIdentifier === itemId;
+                          });
+                          
+                          if (foundItem && foundItem.id) {
+                            assetItemId = foundItem.id;
+                            break;
+                          }
+                        }
+                        
+                        if (assetItemId) {
+                          return createTransfer.mutateAsync({
+                            asset_item: assetItemId,
+                            to_location: parseInt(transferDestination),
+                            notes: transferNotes || undefined,
+                            reason: "Transfer via bulk selection"
+                          });
+                        }
+                        return null;
+                      });
+                      
+                      await Promise.all(transferPromises.filter(Boolean));
+                      
+                      // Show success message
+                      toast.success(`Successfully created ${transferPromises.filter(Boolean).length} transfer(s)`);
+                      
+                      // Reset form and close dialog
+                      setTransferDestination("");
+                      setTransferNotes("");
+                      setIsIssueDialogOpen(false);
+                      setSelectedAssets(new Set());
+                      setSelectedAssetItems(new Set());
+                    } catch (error) {
+                      console.error("Transfer failed:", error);
+                      toast.error("Failed to create transfers. Please try again.");
+                    }
                   }}
                 >
-                  Transfer
+                  {createTransfer.isPending ? "Processing..." : "Transfer"}
                 </Button>
                 <Button 
                   variant="outline" 
                   className="flex-1"
-                  onClick={() => setIsIssueDialogOpen(false)}
+                  onClick={() => {
+                    setTransferDestination("");
+                    setTransferNotes("");
+                    setIsIssueDialogOpen(false);
+                  }}
                 >
                   Cancel
                 </Button>
               </div>
             </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Incoming Assets Dialog */}
+      <Dialog open={isIncomingDialogOpen} onOpenChange={setIsIncomingDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-blue-600" />
+              Incoming Assets
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Assets being transferred to your branch from other locations
+            </p>
+            
+            {/* Mock data for demonstration - replace with actual API call */}
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Asset Name</TableHead>
+                    <TableHead>Serial Number</TableHead>
+                    <TableHead>From Location</TableHead>
+                    <TableHead>Transfer Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {incomingTransfers.length > 0 ? (
+                    incomingTransfers.map((transfer) => (
+                      <TableRow key={transfer.id}>
+                        <TableCell className="font-medium">{transfer.asset_name}</TableCell>
+                        <TableCell>#{transfer.asset_item_serial_number}</TableCell>
+                        <TableCell>{transfer.from_location_name}</TableCell>
+                        <TableCell>
+                          {new Date(transfer.request_date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusBadgeVariant(transfer.status)}>
+                            {getStatusDisplayName(transfer.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center gap-2 justify-center">
+                            {transfer.status === 'PENDING' && (
+                              <>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    approveTransfer.mutate({ 
+                                      id: transfer.id,
+                                      data: { notes: 'Approved via incoming assets view' }
+                                    }, {
+                                      onSuccess: () => {
+                                        toast.success('Transfer approved successfully');
+                                      },
+                                      onError: () => {
+                                        toast.error('Failed to approve transfer');
+                                      }
+                                    });
+                                  }}
+                                  disabled={approveTransfer.isPending}
+                                >
+                                  {approveTransfer.isPending ? 'Approving...' : 'Accept'}
+                                </Button>
+                                <Button 
+                                  variant="destructive" 
+                                  size="sm"
+                                  onClick={() => {
+                                    declineTransfer.mutate({ 
+                                      id: transfer.id,
+                                      data: { notes: 'Declined via incoming assets view' }
+                                    }, {
+                                      onSuccess: () => {
+                                        toast.success('Transfer declined');
+                                      },
+                                      onError: () => {
+                                        toast.error('Failed to decline transfer');
+                                      }
+                                    });
+                                  }}
+                                  disabled={declineTransfer.isPending}
+                                >
+                                  {declineTransfer.isPending ? 'Declining...' : 'Decline'}
+                                </Button>
+                              </>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleViewTransferDetails(transfer)}
+                              title="View transfer details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <Package className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
+                        <p className="text-muted-foreground">No incoming assets</p>
+                        <p className="text-sm text-muted-foreground/70">
+                          Assets transferred to your branch will appear here
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsIncomingDialogOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Outgoing Assets Dialog */}
+      <Dialog open={isOutgoingDialogOpen} onOpenChange={setIsOutgoingDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="w-5 h-5 text-green-600" />
+              Outgoing Assets
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Assets transferred from your branch to other locations
+            </p>
+            
+            {/* Mock data for demonstration - replace with actual API call */}
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Asset Name</TableHead>
+                    <TableHead>Serial Number</TableHead>
+                    <TableHead>To Location</TableHead>
+                    <TableHead>Transfer Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {outgoingTransfers.length > 0 ? (
+                    outgoingTransfers.map((transfer) => (
+                      <TableRow key={transfer.id}>
+                        <TableCell className="font-medium">{transfer.asset_name}</TableCell>
+                        <TableCell>#{transfer.asset_item_serial_number}</TableCell>
+                        <TableCell>{transfer.to_location_name}</TableCell>
+                        <TableCell>
+                          {new Date(transfer.request_date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusBadgeVariant(transfer.status)}>
+                            {getStatusDisplayName(transfer.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleViewTransferDetails(transfer)}
+                            title="View transfer details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <Send className="h-12 w-12 text-muted-foreground/40 mx-auto mb-2" />
+                        <p className="text-muted-foreground">No outgoing assets</p>
+                        <p className="text-sm text-muted-foreground/70">
+                          Assets transferred from your branch will appear here
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsOutgoingDialogOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transfer Details Dialog */}
+      <Dialog open={isTransferDetailsDialogOpen} onOpenChange={setIsTransferDetailsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-blue-600" />
+              Transfer Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedTransferForDetails && (
+            <div className="space-y-6">
+              {/* Transfer Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Transfer ID:</span>
+                    <span className="text-sm font-medium">#{selectedTransferForDetails.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Status:</span>
+                    <Badge variant={getStatusBadgeVariant(selectedTransferForDetails.status)}>
+                      {getStatusDisplayName(selectedTransferForDetails.status)}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Request Date:</span>
+                    <span className="text-sm font-medium">
+                      {new Date(selectedTransferForDetails.request_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">From Location:</span>
+                    <span className="text-sm font-medium">{selectedTransferForDetails.from_location_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">To Location:</span>
+                    <span className="text-sm font-medium">{selectedTransferForDetails.to_location_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Requested By:</span>
+                    <span className="text-sm font-medium">{selectedTransferForDetails.requested_by_name}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Asset Information */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-muted-foreground">Asset Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Asset Name:</span>
+                      <span className="text-sm font-medium">{selectedTransferForDetails.asset_name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Item Name:</span>
+                      <span className="text-sm font-medium">{selectedTransferForDetails.asset_item_name}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Serial Number:</span>
+                      <span className="text-sm font-medium font-mono">
+                        #{selectedTransferForDetails.asset_item_serial_number || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transfer Details */}
+              {(selectedTransferForDetails.reason || selectedTransferForDetails.notes) && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground">Transfer Details</h4>
+                  {selectedTransferForDetails.reason && (
+                    <div>
+                      <span className="text-sm font-medium">Reason:</span>
+                      <p className="text-sm text-muted-foreground mt-1">{selectedTransferForDetails.reason}</p>
+                    </div>
+                  )}
+                  {selectedTransferForDetails.notes && (
+                    <div>
+                      <span className="text-sm font-medium">Notes:</span>
+                      <p className="text-sm text-muted-foreground mt-1">{selectedTransferForDetails.notes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Approval Information */}
+              {(selectedTransferForDetails.status !== 'PENDING' && selectedTransferForDetails.approved_by_name) && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground">Approval Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Approved By:</span>
+                        <span className="text-sm font-medium">{selectedTransferForDetails.approved_by_name}</span>
+                      </div>
+                      {selectedTransferForDetails.approval_date && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Approval Date:</span>
+                          <span className="text-sm font-medium">
+                            {new Date(selectedTransferForDetails.approval_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {selectedTransferForDetails.completion_date && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Completion Date:</span>
+                          <span className="text-sm font-medium">
+                            {new Date(selectedTransferForDetails.completion_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Timeline */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-muted-foreground">Timeline</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">Transfer Requested</span>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(selectedTransferForDetails.request_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Requested by {selectedTransferForDetails.requested_by_name}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {selectedTransferForDetails.approval_date && (
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${
+                        selectedTransferForDetails.status === 'APPROVED' ? 'bg-green-500' : 'bg-red-500'
+                      }`}></div>
+                      <div className="flex-1">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">
+                            Transfer {selectedTransferForDetails.status === 'APPROVED' ? 'Approved' : 'Declined'}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(selectedTransferForDetails.approval_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {selectedTransferForDetails.approved_by_name && (
+                          <p className="text-xs text-muted-foreground">
+                            By {selectedTransferForDetails.approved_by_name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedTransferForDetails.completion_date && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                      <div className="flex-1">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Transfer Completed</span>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(selectedTransferForDetails.completion_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsTransferDetailsDialogOpen(false)}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

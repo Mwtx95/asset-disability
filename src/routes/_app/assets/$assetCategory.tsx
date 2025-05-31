@@ -41,6 +41,7 @@ import {
 } from "@/queries/assetsItems";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
+import { useCreateTransfer } from "@/queries/transfers";
 import useAuthStore from "@/stores/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -50,13 +51,15 @@ import {
 } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import axios from "axios";
-import { ArrowLeft, Pencil, UserPlus } from "lucide-react";
+import { ArrowLeft, Pencil, UserPlus, Send } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 const transferFormSchema = z.object({
   locationId: z.coerce.number().min(1, "Please select a location"),
+  notes: z.string().optional(),
+  reason: z.string().optional(),
 });
 
 const editAssetItemFormSchema = z.object({
@@ -93,11 +96,13 @@ function AssetDetailsRoute() {
   const { data: vendors = [] } = useSuspenseQuery(vendorsQueryOptions);
   const { user } = useAuthStore();
   const transferAsset = useTransferAssetMutation();
+  const createTransfer = useCreateTransfer();
   const queryClient = useQueryClient();
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedItemForEdit, setSelectedItemForEdit] = useState<any>(null);
+  const [selectedItemForTransfer, setSelectedItemForTransfer] = useState<any>(null);
 
   // Check if user is branch admin
   const isBranchAdmin = user?.role === 'branch_admin';
@@ -218,13 +223,30 @@ function AssetDetailsRoute() {
   const assets = Object.values(groupedAssets);
   
   async function onSubmit(values: TransferFormValues) {
+    if (!selectedItemForTransfer) {
+      toast.error("No asset item selected for transfer");
+      return;
+    }
+
     try {
-      // Note: Transfer functionality can be implemented per item basis in the future
-      // For now, this is a placeholder since we removed the transfer button from the UI
+      await createTransfer.mutateAsync({
+        asset_item: selectedItemForTransfer.id,
+        to_location: values.locationId,
+        notes: values.notes,
+        reason: values.reason || "Individual item transfer"
+      });
+      
+      // Invalidate queries to refresh transfer data
+      queryClient.invalidateQueries({ queryKey: ["transfers"] });
+      queryClient.invalidateQueries({ queryKey: ["asset-items"] });
+      
+      toast.success("Transfer request created successfully");
       setIsTransferDialogOpen(false);
+      setSelectedItemForTransfer(null);
       form.reset();
     } catch (error) {
       console.error("Failed to transfer asset:", error);
+      toast.error("Failed to create transfer request");
     }
   }
 
@@ -383,6 +405,18 @@ function AssetDetailsRoute() {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            onClick={() => {
+                              setSelectedItemForTransfer(item);
+                              setIsTransferDialogOpen(true);
+                            }}
+                            disabled={isBranchAdmin}
+                          >
+                            <Send className="h-4 w-4 mr-1" />
+                            Transfer
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
                             onClick={() => handleEditItem(item)}
                           >
                             <Pencil className="h-4 w-4 mr-1" />
@@ -401,10 +435,44 @@ function AssetDetailsRoute() {
 
       {/* Transfer Dialog */}
       <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Transfer Asset</DialogTitle>
+            <DialogTitle>Transfer Asset Item</DialogTitle>
           </DialogHeader>
+          
+          {selectedItemForTransfer && (
+            <div className="bg-muted/50 rounded-lg p-3 mb-4">
+              <h4 className="font-medium text-sm mb-2">Selected Item</h4>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Asset:</span>
+                  <span>{selectedItemForTransfer.asset_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Serial Number:</span>
+                  <span className="font-mono">{selectedItemForTransfer.serial_number || "N/A"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Current Location:</span>
+                  <span>{selectedItemForTransfer.location_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Status:</span>
+                  <span
+                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                      ASSET_STATUS_BADGE_MAP[
+                        selectedItemForTransfer.status as keyof typeof ASSET_STATUS_BADGE_MAP
+                      ]?.color ||
+                      "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                    }`}
+                  >
+                    {selectedItemForTransfer.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -412,7 +480,7 @@ function AssetDetailsRoute() {
                 name="locationId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>New Location</FormLabel>
+                    <FormLabel>Destination Location</FormLabel>
                     <Select
                       onValueChange={(value) => {
                         if (!isBranchAdmin) {
@@ -424,18 +492,20 @@ function AssetDetailsRoute() {
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a location" />
+                          <SelectValue placeholder="Select destination location" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {availableLocations.map((location) => (
-                          <SelectItem
-                            key={location.id}
-                            value={location.id.toString()}
-                          >
-                            {location.name}
-                          </SelectItem>
-                        ))}
+                        {availableLocations
+                          .filter(location => location.id.toString() !== selectedItemForTransfer?.location?.toString())
+                          .map((location) => (
+                            <SelectItem
+                              key={location.id}
+                              value={location.id.toString()}
+                            >
+                              {location.name}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                     {isBranchAdmin && (
@@ -447,13 +517,63 @@ function AssetDetailsRoute() {
                   </FormItem>
                 )}
               />
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={transferAsset.isPending}
-              >
-                {transferAsset.isPending ? "Transferring..." : "Transfer"}
-              </Button>
+
+              <FormField
+                control={form.control}
+                name="reason"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Transfer Reason</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="e.g., Equipment reallocation, branch request"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Additional Notes</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        {...field} 
+                        rows={3}
+                        placeholder="Any additional information about this transfer..."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsTransferDialogOpen(false);
+                    setSelectedItemForTransfer(null);
+                    form.reset();
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={createTransfer.isPending}
+                >
+                  {createTransfer.isPending ? "Creating Transfer..." : "Create Transfer"}
+                </Button>
+              </div>
             </form>
           </Form>
         </DialogContent>
