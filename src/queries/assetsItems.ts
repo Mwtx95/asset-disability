@@ -9,63 +9,82 @@ import axios from 'axios';
 type status = 'AVAILABLE' | 'MAINTENANCE' | 'BROKEN' | 'ASSIGNED';
 
 export interface AssetItem {
-    id: number;
+    id?: number;  // Optional since backend doesn't provide it
     asset_name: string;
-    assetId: number;
+    asset: number;  // Changed from assetId to match Django
     serial_number: string;
-    purchaseDate: Date;
-    warrantyExpiryDate: Date;
-    notes?: string;
-    quantity: number;
+    purchase_date: string;  // Changed from purchaseDate, Django returns string
+    warranty_expiry_date: string;  // Changed from warrantyExpiryDate, Django returns string
+    description?: string;  // Changed from notes to match Django
     price: number;
     status: status;
-    locationId: number;
-    vendorId: number;
-    asset: string;
+    location: number;  // Changed from locationId to match Django
+    vendor: number;  // Changed from vendorId to match Django
     location_name: string;
+    vendor_name?: string;
+    created_at: string;  // Added
+    updated_at: string;  // Added
+    asset_details?: any;  // Added for nested asset data
+    // Add computed ID based on serial number for frontend use
+    _computedId?: string;
 }
 
 export interface CreateAssetItemDTO {
-    assetId: number;
+    asset: number;  // Changed from assetId
     serial_number: string;
-    locationId: number;
-    vendorId: number;
-    purchaseDate: Date;
-    warrantyExpiryDate: Date;
+    location: number;  // Changed from locationId
+    vendor: number;  // Changed from vendorId
+    purchase_date: string;  // Changed from purchaseDate, using string
+    warranty_expiry_date: string;  // Changed from warrantyExpiryDate, using string
     price: number;
-    notes?: string;
+    description?: string;  // Changed from notes
 }
 
 async function getAssetItems() {
-    const { data } = await axios.get<AssetItem[]>('/asset-items');
-    return data;
+    const { data } = await axios.get<AssetItem[]>('/assetitems/');
+    // Add computed IDs for frontend use based on serial number and asset
+    return data.map(item => ({
+        ...item,
+        _computedId: `${item.asset}_${item.serial_number}`.replace(/[^a-zA-Z0-9]/g, '_'),
+        id: item.id || undefined
+    }));
 }
 
 async function getAssetItemsByAssetId(assetId: number) {
     const { data } = await axios.get<AssetItem[]>(`/assetitems/asset/${assetId}/`);
-    return data;
+    // Add computed IDs for frontend use based on serial number and asset
+    return data.map(item => ({
+        ...item,
+        _computedId: `${item.asset}_${item.serial_number}`.replace(/[^a-zA-Z0-9]/g, '_'),
+        id: item.id || undefined
+    }));
 }
 
 async function getAssetItemsByCategoryId(categoryId: number) {
     const { data } = await axios.get<AssetItem[]>(`/assetitems/category/${categoryId}/`);
-    return data;
+    // Add computed IDs for frontend use based on serial number and asset
+    return data.map(item => ({
+        ...item,
+        _computedId: `${item.asset}_${item.serial_number}`.replace(/[^a-zA-Z0-9]/g, '_'),
+        id: item.id || undefined
+    }));
 }
 
 async function createAssetItem(assetItem: CreateAssetItemDTO) {
-    const { data } = await axios.post<AssetItem>('/asset-items', assetItem);
+    const { data } = await axios.post<AssetItem>('/assetitems/', assetItem);
     return data;
 }
 
 async function updateAssetItem(assetItem: AssetItem) {
     const { data } = await axios.put<AssetItem>(
-        `/asset-items/${assetItem.id}`,
+        `/assetitems/${assetItem.id}/`,
         assetItem
     );
     return data;
 }
 
 async function disposeAssetItem(id: number) {
-    const { data } = await axios.patch<AssetItem>(`/asset-items/${id}/dispose`);
+    const { data } = await axios.patch<AssetItem>(`/assetitems/${id}/dispose/`);
     return data;
 }
 
@@ -94,7 +113,7 @@ export function useCreateAssetItem() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['asset-items'] });
             queryClient.invalidateQueries({
-                queryKey: ['asset-items', 'asset', data.assetId]
+                queryKey: ['asset-items', 'asset', data.asset]
             });
         },
     });
@@ -108,7 +127,7 @@ export function useUpdateAssetItem() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['asset-items'] });
             queryClient.invalidateQueries({
-                queryKey: ['asset-items', 'asset', data.assetId]
+                queryKey: ['asset-items', 'asset', data.asset]
             });
         },
     });

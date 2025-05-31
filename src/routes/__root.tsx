@@ -16,9 +16,21 @@ export const Route = createRootRouteWithContext<RouteContext>()({
     const rootPage = location.pathname === '/';
     const isLoginPage = location.pathname === '/login';
 
-    if (isLoginPage && !isAuthenticated) return;
-    if (isLoginPage || rootPage) throw redirect({ to: '/dashboard' });
-    if (!isAuthenticated) throw redirect({ to: '/login' });
+    // If user is not authenticated
+    if (!isAuthenticated) {
+      // Allow access to login page
+      if (isLoginPage) return;
+      // Redirect all other pages to login
+      throw redirect({ to: '/login' });
+    }
+
+    // If user is authenticated
+    if (isAuthenticated) {
+      // Redirect login page to dashboard if already authenticated
+      if (isLoginPage) throw redirect({ to: '/dashboard' });
+      // Redirect root page to dashboard if already authenticated
+      if (rootPage) throw redirect({ to: '/dashboard' });
+    }
   },
   component: Outlet,
 });

@@ -6,7 +6,6 @@ import {
 } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'sonner';
-// import toast from 'react-hot-toast'; // Assuming you have react-hot-toast installed
 
 export interface Asset {
   id: number;
@@ -18,12 +17,16 @@ export interface Asset {
   location: string;
   createdAt: string;
   updatedAt: null;
+  quantity?: number;
+  vendor?: string;
+  vendorId?: number;
   serial_number?: string;
   purchaseDate?: string;
   purchasePrice?: number;
   currentLocation?: string;
   condition?: string;
   warrantyInfo?: string;
+  warrantyExpiryDate?: string;
   notes?: string;
 }
 

@@ -17,10 +17,11 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { ASSET_STATUSES } from "@/lib/constants";
+
 import { categoriesQueryOptions } from "@/queries/categories";
 import { locationQueryOptions } from "@/queries/locations";
 import { vendorsQueryOptions } from "@/queries/vendors";
+import useAuthStore from "@/stores/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useMutation,
@@ -28,7 +29,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import axios from "axios";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -43,11 +44,10 @@ const formSchema = z.object({
   location: z.coerce.number().min(1, "Please select a location"),
   price: z.coerce.number().min(0, "Price must be at least 0").default(0),
   vendor: z.coerce.number().min(1, "Please select a vendor"),
-  status: z.string().min(1, "Please select a status"),
   serialNumberPrefix: z.string().optional(),
   purchaseDate: z.string().optional(),
   warrantyExpiryDate: z.string().optional(),
-  notes: z.string().optional(),
+  description: z.string().optional(),
   generateSerialNumbers: z.boolean().default(false),
 });
 
@@ -60,9 +60,18 @@ interface AddAssetFormProps {
 export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
   const queryClient = useQueryClient();
   const [isGeneratingSerials, setIsGeneratingSerials] = useState(false);
+  const { user } = useAuthStore();
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions);
   const { data: locations } = useSuspenseQuery(locationQueryOptions);
   const { data: vendors } = useSuspenseQuery(vendorsQueryOptions);
+
+  // Check if user is branch admin
+  const isBranchAdmin = user?.role === 'branch_admin';
+  
+  // Filter locations based on user role
+  const availableLocations = isBranchAdmin && user?.branch 
+    ? locations.filter(location => location.id === user.branch.toString())
+    : locations;
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -73,95 +82,66 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
       location: undefined,
       price: 0,
       vendor: undefined,
-      status: ASSET_STATUSES.AVAILABLE,
       serialNumberPrefix: "",
       purchaseDate: new Date().toISOString().split("T")[0],
       warrantyExpiryDate: "",
-      notes: "",
+      description: "",
       generateSerialNumbers: false,
     },
   });
 
+  // Set default location for branch admin users
+  useEffect(() => {
+    if (isBranchAdmin && user?.branch) {
+      form.setValue('location', user.branch);
+    }
+  }, [isBranchAdmin, user?.branch, form]);
+
+  // Watch for form changes to debug
+  const watchedLocation = form.watch('location');
+  console.log('Current form location value:', watchedLocation);
+  console.log('Is branch admin:', isBranchAdmin);
+  console.log('User branch:', user?.branch);
+  console.log('Available locations:', availableLocations);
+
   const mutation = useMutation({
     mutationFn: async (values: FormSchema) => {
-      // First create the asset
-      console.log("Sending asset data:", {
+      // Prepare the payload
+      const payload = {
         name: values.name,
-        quantity: values.quantity,
-        category: values.category,
-        location: values.location,
-        price: values.price,
-        vendor: values.vendor,
-        status: values.status,
-        purchase_date: values.purchaseDate,
-        warranty_expiry_date: values.warrantyExpiryDate,
-        notes: values.notes,
-        // Serial number options
-        generateSerialNumbers: values.generateSerialNumbers,
-        serialNumberPrefix:
-          values.serialNumberPrefix ||
-          values.name.substring(0, 3).toUpperCase(),
-      });
-
-      const response = await axios.post("/assets/receive/", {
-        name: values.name,
-        quantity: values.quantity,
-        category: values.category,
-        location: values.location,
-        price: values.price,
-        vendor: values.vendor,
-        status: values.status,
-        purchase_date: values.purchaseDate, // Changed field name to match Django model
-        warranty_expiry_date: values.warrantyExpiryDate, // Changed field name to match Django model
-        notes: values.notes,
+        quantity: Number(values.quantity),
+        category: Number(values.category),
+        location: Number(values.location),
+        price: Number(values.price),
+        vendor: Number(values.vendor),
+        purchase_date: values.purchaseDate || null,
+        warranty_expiry_date: values.warrantyExpiryDate || null,
+        description: values.description || "",
         // Serial number generation options
-        generateSerialNumbers: values.generateSerialNumbers,
-        serialNumberPrefix:
+        generate_serial_numbers: Boolean(values.generateSerialNumbers),
+        serial_number_prefix:
           values.serialNumberPrefix ||
           values.name.substring(0, 3).toUpperCase(),
-      });
+      };
 
-      console.log("Full API response:", response);
+      console.log("Sending asset data:", payload);
 
-      // Check the structure of the response
-      const assetData = response.data;
-      console.log("Asset data received:", assetData);
-
-      // Check if we got an ID and where it might be located
-      let assetId = null;
-      if (assetData && assetData.id) {
-        assetId = assetData.id;
-        console.log("Asset ID found in data.id:", assetId);
-      } else if (assetData && assetData.asset && assetData.asset.id) {
-        assetId = assetData.asset.id;
-        console.log("Asset ID found in data.asset.id:", assetId);
-      } else if (assetData && typeof assetData === "object") {
-        // Look for an ID field if the response is an object
-        const possibleIdFields = Object.entries(assetData).find(
-          ([key]) => key.toLowerCase().includes("id") || key === "pk"
-        );
-
-        if (possibleIdFields) {
-          assetId = possibleIdFields[1];
-          console.log(`Asset ID found in ${possibleIdFields[0]}:`, assetId);
-        } else {
-          console.log("Response keys:", Object.keys(assetData));
-        }
+      try {
+        const response = await axios.post("/assets/receive/", payload);
+        console.log("API Response:", response.data);
+        return response.data;
+      } catch (error: any) {
+        console.error("API Error Details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          headers: error.response?.headers,
+          url: error.config?.url,
+          method: error.config?.method,
+          payload: payload
+        });
+        throw error;
       }
-
-      // We don't need to generate serial numbers in the frontend anymore
-      // The Django backend will handle serial number generation based on the
-      // generateSerialNumbers and serialNumberPrefix fields we sent
-
-      // IMPORTANT: Based on your Django code, the /assets/receive/ endpoint
-      // already creates asset items when you send quantity > 1 and handles the
-      // serial number generation based on the preferences we sent.
-
-      console.log(
-        "Asset creation complete. Returning asset data without creating additional items."
-      );
-      // Just return the asset data without creating additional items
-      return assetData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
@@ -170,9 +150,13 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
       form.reset();
       onSuccess();
     },
-    onError: (error) => {
-      toast.error("Failed to receive asset");
-      console.error(error);
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.detail || 
+                          error.message || 
+                          "Failed to receive asset";
+      toast.error(errorMessage);
+      console.error("Mutation Error:", error);
     },
   });
 
@@ -261,14 +245,23 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Location</FormLabel>
-                <Select onValueChange={field.onChange}>
+                <Select 
+                  onValueChange={(value) => {
+                    console.log('Location change attempted:', value, 'Is disabled:', isBranchAdmin);
+                    if (!isBranchAdmin) {
+                      field.onChange(value);
+                    }
+                  }}
+                  disabled={isBranchAdmin}
+                  value={field.value?.toString()}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a location" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {locations.map((location) => (
+                    {availableLocations.map((location) => (
                       <SelectItem
                         key={location.id}
                         value={location.id.toString()}
@@ -278,6 +271,11 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                {isBranchAdmin && (
+                  <p className="text-xs text-muted-foreground">
+                    Location is automatically set to your branch
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -285,7 +283,7 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
         </div>
 
         {/* Purchase Details */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="price"
@@ -323,36 +321,6 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
                         {vendor.name}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Object.entries(ASSET_STATUSES)
-                      .filter(([key]) => key !== "ALL") // Filter out the "All Statuses" option
-                      .map(([key, value]) => (
-                        <SelectItem key={key} value={key}>
-                          {value}
-                        </SelectItem>
-                      ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -453,16 +421,16 @@ export function AddAssetForm({ onSuccess }: AddAssetFormProps) {
           </div>
         </div>
 
-        {/* Notes */}
+        {/* Description */}
         <FormField
           control={form.control}
-          name="notes"
+          name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes</FormLabel>
+              <FormLabel>Description</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Enter additional notes"
+                  placeholder="Enter additional description"
                   className="resize-none"
                   {...field}
                 />

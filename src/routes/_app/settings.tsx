@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { createFileRoute } from '@tanstack/react-router';
 import { PlusIcon } from 'lucide-react';
 import * as React from 'react';
+import useAuthStore from '@/stores/auth';
 
 export const Route = createFileRoute('/_app/settings')({
   component: SettingsPage,
@@ -30,7 +31,18 @@ export const Route = createFileRoute('/_app/settings')({
 
 function SettingsPage() {
   const [isOpen, setIsOpen] = React.useState<boolean>(false);
-  const [selectedTab, setSelectedTab] = React.useState<string>('locations');
+  const [selectedTab, setSelectedTab] = React.useState<string>('email');
+  const { user } = useAuthStore();
+
+  // For branch admin users, only show email and notifications tabs
+  const isBranchAdmin = user?.role === 'branch_admin';
+  
+  // Adjust default tab for branch admin users
+  React.useEffect(() => {
+    if (isBranchAdmin && (selectedTab === 'locations' || selectedTab === 'vendors' || selectedTab === 'categories')) {
+      setSelectedTab('email');
+    }
+  }, [isBranchAdmin, selectedTab]);
 
   return (
     <div className='container mx-auto space-y-6'>
@@ -46,10 +58,10 @@ function SettingsPage() {
         onValueChange={setSelectedTab}
         className='space-y-4'
       >
-        <TabsList className='grid w-full grid-cols-5'>
-          <TabsTrigger value='locations'>Locations</TabsTrigger>
-          <TabsTrigger value='vendors'>Vendors</TabsTrigger>
-          <TabsTrigger value='categories'>Categories</TabsTrigger>
+        <TabsList className={`grid w-full ${isBranchAdmin ? 'grid-cols-2' : 'grid-cols-5'}`}>
+          {!isBranchAdmin && <TabsTrigger value='locations'>Locations</TabsTrigger>}
+          {!isBranchAdmin && <TabsTrigger value='vendors'>Vendors</TabsTrigger>}
+          {!isBranchAdmin && <TabsTrigger value='categories'>Categories</TabsTrigger>}
           <TabsTrigger value='email'>Email</TabsTrigger>
           <TabsTrigger value='notifications'>Notifications</TabsTrigger>
         </TabsList>
